@@ -1,12 +1,12 @@
 # -*- coding: cp1252 -*-
 # Autoren: Martin, Max, Vincent, Christoph, Lia; erstellt: 24.02.2020
-# Der Projektwochenmanager zum zuordnen aller Schüler zu Projekten
+# Der Projektwochenmanager zum zuordnen aller SchÃ¼ler zu Projekten
 
 import csv
 import os
 import sqlite3 as sqli
 from tkinter import *
-from tkinter import filedialog  # muss aus unbekannten Gründen extra importiert werden
+from tkinter import filedialog  # muss aus unbekannten GrÃ¼nden extra importiert werden
 from tkinter.messagebox import *
 
 
@@ -88,7 +88,7 @@ class Model(object):
 
 class View(Tk):
     def __init__(self, callback_imp, callback_exp, callback_bee, callback_J5, callback_J6, callback_J7, callback_J8, callback_J9,
-                 callback_J10, callback_J11, callback_J12, callback_J13):
+                 callback_J10, callback_J11, callback_J12, callback_J13, hinzu):
         Tk.__init__(self)
         self.title("Projektwochenverwaltungsprogramm")
         self.geometry('600x300')
@@ -105,19 +105,23 @@ class View(Tk):
         self.callback_J11 = callback_J11
         self.callback_J12 = callback_J12
         self.callback_J13 = callback_J13
+        self.hinzufugen=hinzu
 
         self.rahmen1 = Frame(master=self)
         self.rahmen2 = Frame(master=self)
         self.rahmen11 = Frame(master=self.rahmen1)
 
-        # erstellen des Menüs
-        self.menubar = Menu(self)
-        self.filemenu = Menu(self.menubar, tearoff=0)
+        # erstellen des MenÃ¼s
+        self.menubar=Menu(self)
+        self.filemenu=Menu(self.menubar, tearoff=0)
         self.filemenu.add_command(label="Import", command=self.callback_imp)
         self.filemenu.add_command(label="Export", command=self.callback_exp)
         self.filemenu.add_separator()
-        self.filemenu.add_command(label="Beenden", command=self.callback_bee)
+        self.filemenu.add_command(label="Exit", command=self.destroy)
         self.menubar.add_cascade(label="Datei", menu=self.filemenu)
+        self.fmenu=Menu(self.menubar, tearoff=0)
+        self.fmenu.add_command(label="SchÃ¼ler hinzufÃ¼gen", command=self.schulerhin)
+        self.menubar.add_cascade(label="SchÃ¼ler", menu=self.fmenu)
         self.config(menu=self.menubar)
 
         self.scrollbar = Scrollbar(self.rahmen2)
@@ -153,16 +157,57 @@ class View(Tk):
             anchor=W, side=LEFT)
         self.r9 = Radiobutton(self.rahmen11, text="13", variable=self.v, value=9, command=self.callback_J13).pack(
             anchor=W, side=LEFT)
+        
+        
+    def schulerhin(self):
+        neu=Tk()
+        neu.title("Neue SchÃ¼ler")
+        neu.geometry('780x110')
+        self.l1=Label(master=neu, text="Vorname")
+        self.l1.place(x=10,y=10,width=100)
+        self.l2=Label(master=neu, text="Nachname")
+        self.l2.place(x=120,y=10,width=100)
+        self.l3=Label(master=neu, text="Klasse")
+        self.l3.place(x=230,y=10,width=100)
+        self.l4=Label(master=neu, text="Jahrg")
+        self.l4.place(x=340,y=10,width=100)
+        self.l5=Label(master=neu, text="Erst Wunsch")
+        self.l5.place(x=450,y=10,width=100)
+        self.l6=Label(master=neu, text="Zweit Wunsch")
+        self.l6.place(x=560,y=10,width=100)
+        self.l7=Label(master=neu, text="Dritt Wunsch")
+        self.l7.place(x=670,y=10,width=100)
+
+        
+        self.e1=Entry(master=neu)
+        self.e1.place(x=10,y=40,width=100)
+        self.e2=Entry(master=neu)
+        self.e2.place(x=120,y=40,width=100)
+        self.e3=Entry(master=neu)
+        self.e3.place(x=230,y=40,width=100)
+        self.e4=Entry(master=neu)
+        self.e4.place(x=340,y=40,width=100)
+        self.e5=Entry(master=neu)
+        self.e5.place(x=450,y=40,width=100)
+        self.e6=Entry(master=neu)
+        self.e6.place(x=560,y=40,width=100)
+        self.e7=Entry(master=neu)
+        self.e7.place(x=670,y=40,width=100)
+
+        self.b1=Button(master=neu, text="SchÃ¼ler hinzufÃ¼gen", command=self.hinzufugen)
+        self.b1.place(x=330,y=70,width=120, height=30)
+        
+
 
 
 class Controller(object):
     def __init__(self):
         self.model = Model()
         self.view = View(self.importieren, self.exportieren, self.beenden, self.J5, self.J6, self.J7, self.J8, self.J9,
-                         self.J10, self.J11, self.J12, self.J13)
+                         self.J10, self.J11, self.J12, self.J13, self.hinzufugen)
 
     def importieren(self):
-        slcsv = filedialog.askopenfilename(title="Schülerliste importieren",
+        slcsv = filedialog.askopenfilename(title="SchÃ¼lerliste importieren",
                                            filetypes=(("CSV Datei", "*.csv"), ("all files", "*.*")))
         plcsv = filedialog.askopenfilename(title="Projektliste importieren",
                                            filetypes=(("CSV Datei", "*.csv"), ("all files", "*.*")))
@@ -172,7 +217,7 @@ class Controller(object):
         pass
 
     def beenden(self):
-        x = askokcancel(title='Beenden', message='Möchtest du das Programm wirklich beenden?\nNicht abgeschlossene Aktionen könnten zu fehlern führen!')
+        x = askokcancel(title='Beenden', message='MÃ¶chtest du das Programm wirklich beenden?\nNicht abgeschlossene Aktionen kÃ¶nnten zu fehlern fÃ¼hren!')
         if x:
             self.view.destroy()
 
@@ -182,6 +227,24 @@ class Controller(object):
             for j in range(len(x[0])):
                 b = Label(self.view, text=str(x[i][j]), bg="lightgray")
                 b.grid(row=i, column=j)
+    def hinzufugen(self):
+        erst=self.view.e5.get()
+        zweit=self.view.e6.get()
+        dritt=self.view.e7.get()
+        if self.view.e7.get()=="":
+            print(7)
+            dritt="33"
+            if self.view.e6.get()=="":
+                zweit="33"
+                if self.view.e5.get()=="":
+                    erst="33"
+        if self.view.e1.get()!="" and self.view.e2.get()!="" and self.view.e3.get()!="" and self.view.e4.get()!="" :
+            connection = sqli.connect('schuelerliste.db')
+            cursor = connection.cursor()
+            sql="insert into schueler (sName, sVName, sJahrg, sKla, sErst, sZweit, sDritt) VALUES('"+str(self.view.e2.get())+"','"+str(self.view.e1.get())+"','"+str(self.view.e3.get())+"','"+str(self.view.e4.get())+"','"+str(erst)+"','"+str(zweit)+"','"+str(dritt)+"')"        
+            cursor.execute(sql)
+            connection.commit()
+            connection.close()
 
     def J5(self):
         pass
