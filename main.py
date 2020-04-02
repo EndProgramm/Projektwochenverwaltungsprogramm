@@ -36,7 +36,7 @@ class Model(object):
 
         # importieren der slcsv Datei
         file = open(slcsv, 'r')
-        read = csv.reader(file, delimiter=',')
+        read = csv.reader(file, delimiter=';')
         for row in read:
             sql = "SELECT COUNT(*) FROM schueler WHERE sName = '" + row[0] + "' AND sVName = '" + row[
                 1] + "' AND sJahrg = '" + row[2] + "';"
@@ -52,7 +52,7 @@ class Model(object):
 
         # importieren der plcsv Datei
         file = open(plcsv, 'r')
-        read = csv.reader(file, delimiter=',')
+        read = csv.reader(file, delimiter=';')
         for row in read:
             sql = "SELECT COUNT(*) FROM projekte WHERE pName = '" + row[0] + "' AND pJahrg = '" + row[1] + "';"
             cur.execute(sql)
@@ -72,12 +72,13 @@ class Model(object):
         con = sqli.connect('pwvwp.db')
         cur = con.cursor()
 
-        sql = "SELECT * FROM "+tabellen_name+";"
+        sql = "SELECT * FROM " + tabellen_name + ";"
         cur.execute(sql)
         erg = cur.fetchall()
 
         con.close()
         return erg
+
 
 #    def dbAuslesen(self):
 #        con = sqli.connect('pwvwp.db')
@@ -87,8 +88,9 @@ class Model(object):
 
 
 class View(Tk):
-    def __init__(self, callback_imp, callback_exp, callback_bee, callback_J5, callback_J6, callback_J7, callback_J8, callback_J9,
-                 callback_J10, callback_J11, callback_J12, callback_J13):
+    def __init__(self, callback_imp, callback_exp, callback_bee, callback_J5, callback_J6, callback_J7, callback_J8,
+                 callback_J9,
+                 callback_J10, callback_J11, callback_J12, callback_J13, callback_hin):
         Tk.__init__(self)
         self.title("Projektwochenverwaltungsprogramm")
         self.geometry('600x300')
@@ -105,7 +107,12 @@ class View(Tk):
         self.callback_J11 = callback_J11
         self.callback_J12 = callback_J12
         self.callback_J13 = callback_J13
+        self.callback_hin = callback_hin
+        self.schue_labels = []
+        self.labelnames = ["Vorname", "Nachname", "Klasse", "Jahrg", "Erst Wunsch", "Zweit Wunsch", "Dritt Wunsch"]
+        self.schue_entrys = []
 
+        self.ro_botton = None   # your ordinary buttom
         self.rahmen1 = Frame(master=self)
         self.rahmen2 = Frame(master=self)
         self.rahmen11 = Frame(master=self.rahmen1)
@@ -118,6 +125,9 @@ class View(Tk):
         self.filemenu.add_separator()
         self.filemenu.add_command(label="Beenden", command=self.callback_bee)
         self.menubar.add_cascade(label="Datei", menu=self.filemenu)
+        self.fmenu = Menu(self.menubar, tearoff=0)
+        self.fmenu.add_command(label="Schüler hinzufügen", command=self.schulerhin)
+        self.menubar.add_cascade(label="Schüler", menu=self.fmenu)
         self.config(menu=self.menubar)
 
         self.scrollbar = Scrollbar(self.rahmen2)
@@ -154,12 +164,26 @@ class View(Tk):
         self.r9 = Radiobutton(self.rahmen11, text="13", variable=self.v, value=9, command=self.callback_J13).pack(
             anchor=W, side=LEFT)
 
+    def schulerhin(self):
+        neu = Tk()
+        neu.title("Neue Schüler")
+        neu.geometry('780x110')
+        for i in range(len(self.labelnames)):
+            self.schue_labels.append(Label(neu, text=self.labelnames[i]))
+            self.schue_labels[-1].place(x=10+(110*i), y=10, width=100)
+        for i in range(len(self.labelnames)):
+            self.schue_entrys.append(Entry(neu))
+            self.schue_entrys[-1].place(x=10+(110*i), y=40, width=100)
+
+        self.ro_botton = Button(master=neu, text="Schüler hinzufügen", command=self.callback_hin)
+        self.ro_botton.place(x=330, y=70, width=120, height=30)
+
 
 class Controller(object):
     def __init__(self):
         self.model = Model()
         self.view = View(self.importieren, self.exportieren, self.beenden, self.J5, self.J6, self.J7, self.J8, self.J9,
-                         self.J10, self.J11, self.J12, self.J13)
+                         self.J10, self.J11, self.J12, self.J13, self.hinzufugen)
 
     def importieren(self):
         slcsv = filedialog.askopenfilename(title="Schülerliste importieren",
@@ -172,7 +196,8 @@ class Controller(object):
         pass
 
     def beenden(self):
-        x = askokcancel(title='Beenden', message='Möchtest du das Programm wirklich beenden?\nNicht abgeschlossene Aktionen könnten zu fehlern führen!')
+        x = askokcancel(title='Beenden',
+                        message='Möchtest du das Programm wirklich beenden?\nNicht abgeschlossene Aktionen könnten zu fehlern führen!')
         if x:
             self.view.destroy()
 
@@ -182,6 +207,27 @@ class Controller(object):
             for j in range(len(x[0])):
                 b = Label(self.view, text=str(x[i][j]), bg="lightgray")
                 b.grid(row=i, column=j)
+
+    def hinzufugen(self):
+        erst = self.view.e5.get()
+        zweit = self.view.e6.get()
+        dritt = self.view.e7.get()
+        if self.view.e7.get() == "":
+            print(7)
+            dritt = "33"
+            if self.view.e6.get() == "":
+                zweit = "33"
+                if self.view.e5.get() == "":
+                    erst = "33"
+        if self.view.e1.get() != "" and self.view.e2.get() != "" and self.view.e3.get() != "" and self.view.e4.get() != "":
+            connection = sqli.connect('schuelerliste.db')
+            cursor = connection.cursor()
+            sql = "insert into schueler (sName, sVName, sJahrg, sKla, sErst, sZweit, sDritt) VALUES('" + str(
+                self.view.e2.get()) + "','" + str(self.view.e1.get()) + "','" + str(self.view.e3.get()) + "','" + str(
+                self.view.e4.get()) + "','" + str(erst) + "','" + str(zweit) + "','" + str(dritt) + "')"
+            cursor.execute(sql)
+            connection.commit()
+            connection.close()
 
     def J5(self):
         pass
