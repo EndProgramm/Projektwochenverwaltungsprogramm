@@ -68,11 +68,31 @@ class Model(object):
         con.commit()
         con.close()
 
-    def ausgabe(self, tabellen_name):
+    def einfuegen(self, tabelle, spalten_namen_tuple, value_tuple):
+        con = sqli.connect('pwvwp.db')
+        cur = con.cursor()
+        sql = "insert into "+tabelle+"("
+        for i in range(len(spalten_namen_tuple)):
+            if i == len(spalten_namen_tuple)-1:
+                sql += spalten_namen_tuple[i] + ")"
+            else:
+                sql += spalten_namen_tuple[i] + ", "
+        sql += " VALUES('"
+        for i in range(len(value_tuple)):
+            if i == len(value_tuple)-1:
+                sql += value_tuple[i] + "');"
+            else:
+                sql += value_tuple[i] + "', '"
+        print(sql)
+        cur.execute(sql)
+        con.commit()
+        con.close()
+
+    def ausgabe(self, tabelle):
         con = sqli.connect('pwvwp.db')
         cur = con.cursor()
 
-        sql = "SELECT * FROM " + tabellen_name + ";"
+        sql = "SELECT * FROM " + tabelle + ";"
         cur.execute(sql)
         erg = cur.fetchall()
 
@@ -108,7 +128,7 @@ class View(Tk):
         self.callback_J12 = callback_J12
         self.callback_J13 = callback_J13
         self.callback_hin = callback_hin
-        self.schue_labels = []
+        self.schue_labels = {}
         self.labelnames = ["Vorname", "Nachname", "Klasse", "Jahrg", "Erst Wunsch", "Zweit Wunsch", "Dritt Wunsch"]
         self.schue_entrys = []
 
@@ -169,8 +189,8 @@ class View(Tk):
         neu.title("Neue Schüler")
         neu.geometry('780x110')
         for i in range(len(self.labelnames)):
-            self.schue_labels.append(Label(neu, text=self.labelnames[i]))
-            self.schue_labels[-1].place(x=10+(110*i), y=10, width=100)
+            self.schue_labels.update({self.labelnames[i]:Label(neu, text=self.labelnames[i])})
+            self.schue_labels[self.labelnames[i]].place(x=10+(110*i), y=10, width=100)
         for i in range(len(self.labelnames)):
             self.schue_entrys.append(Entry(neu))
             self.schue_entrys[-1].place(x=10+(110*i), y=40, width=100)
@@ -197,7 +217,8 @@ class Controller(object):
 
     def beenden(self):
         x = askokcancel(title='Beenden',
-                        message='Möchtest du das Programm wirklich beenden?\nNicht abgeschlossene Aktionen könnten zu fehlern führen!')
+                        message='Möchtest du das Programm wirklich beenden?'
+                                '\nNicht abgeschlossene Aktionen könnten zu fehlern führen!')
         if x:
             self.view.destroy()
 
@@ -209,25 +230,21 @@ class Controller(object):
                 b.grid(row=i, column=j)
 
     def hinzufugen(self):
-        erst = self.view.e5.get()
-        zweit = self.view.e6.get()
-        dritt = self.view.e7.get()
-        if self.view.e7.get() == "":
+        erst = self.view.schue_entrys[4].get()
+        zweit = self.view.schue_entrys[5].get()
+        dritt = self.view.schue_entrys[6].get()
+        if self.view.schue_entrys[6].get() == "":
             print(7)
             dritt = "33"
-            if self.view.e6.get() == "":
+            if self.view.schue_entrys[5].get() == "":
                 zweit = "33"
-                if self.view.e5.get() == "":
+                if self.view.schue_entrys[4].get() == "":
                     erst = "33"
-        if self.view.e1.get() != "" and self.view.e2.get() != "" and self.view.e3.get() != "" and self.view.e4.get() != "":
-            connection = sqli.connect('schuelerliste.db')
-            cursor = connection.cursor()
-            sql = "insert into schueler (sName, sVName, sJahrg, sKla, sErst, sZweit, sDritt) VALUES('" + str(
-                self.view.e2.get()) + "','" + str(self.view.e1.get()) + "','" + str(self.view.e3.get()) + "','" + str(
-                self.view.e4.get()) + "','" + str(erst) + "','" + str(zweit) + "','" + str(dritt) + "')"
-            cursor.execute(sql)
-            connection.commit()
-            connection.close()
+        if self.view.schue_entrys[0].get() != "" and self.view.schue_entrys[1].get() != "" and\
+                self.view.schue_entrys[2].get() != "" and self.view.schue_entrys[3].get() != "":
+            self.model.einfuegen('schueler', ('sName', 'sVName', 'sJahrg', 'sKla', 'sErst', 'sZweit', 'sDritt'),
+                                 (self.view.schue_entrys[1].get(), self.view.schue_entrys[0].get(),
+                                  self.view.schue_entrys[2].get(), self.view.schue_entrys[3].get(), erst, zweit, dritt))
 
     def J5(self):
         pass
