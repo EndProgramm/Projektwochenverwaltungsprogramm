@@ -36,7 +36,7 @@ class Model(object):
 
         # importieren der slcsv Datei
         file = open(slcsv, 'r')
-        read = csv.reader(file, delimiter=',')
+        read = csv.reader(file, delimiter=';')
         for row in read:
             sql = "SELECT COUNT(*) FROM schueler WHERE sName = '" + row[0] + "' AND sVName = '" + row[
                 1] + "' AND sJahrg = '" + row[2] + "';"
@@ -52,7 +52,7 @@ class Model(object):
 
         # importieren der plcsv Datei
         file = open(plcsv, 'r')
-        read = csv.reader(file, delimiter=',')
+        read = csv.reader(file, delimiter=';')
         for row in read:
             sql = "SELECT COUNT(*) FROM projekte WHERE pName = '" + row[0] + "' AND pJahrg = '" + row[1] + "';"
             cur.execute(sql)
