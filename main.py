@@ -195,7 +195,7 @@ class View(Tk):
         self.e7.place(x=670,y=40,width=100)
 
         self.b1=Button(master=neu, text="Schüler hinzufügen", command=self.hinzufugen)
-        self.b1.place(x=330,y=70,width=120, height=30)
+        self.b1.place(x=10,y=70,width=760, height=30)
         
 
 
@@ -239,12 +239,13 @@ class Controller(object):
                 if self.view.e5.get()=="":
                     erst="33"
         if self.view.e1.get()!="" and self.view.e2.get()!="" and self.view.e3.get()!="" and self.view.e4.get()!="" :
-            connection = sqli.connect('schuelerliste.db')
+            connection = sqli.connect('pwvwp.db')
             cursor = connection.cursor()
             sql="insert into schueler (sName, sVName, sJahrg, sKla, sErst, sZweit, sDritt) VALUES('"+str(self.view.e2.get())+"','"+str(self.view.e1.get())+"','"+str(self.view.e3.get())+"','"+str(self.view.e4.get())+"','"+str(erst)+"','"+str(zweit)+"','"+str(dritt)+"')"        
             cursor.execute(sql)
             connection.commit()
             connection.close()
+            self.view.b1.config(bg="green")
 
     def J5(self):
         pass
