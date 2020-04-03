@@ -1,9 +1,9 @@
-import sqlite3
+import sqlite3 as sqli
 import random
 
 def auswahl():
     #Herstellen der Verbindung mit der Datenbank
-    connection = sqlite3.connect("schuelerliste.db")
+    connection = sqli.connect("pwvwp.db")
     #Über den sogenannten Cursor können Anfragen an die Datenbank gestellt werden
     cursor = connection.cursor()
     
@@ -17,6 +17,8 @@ def auswahl():
         x=cursor.fetchall() #max Projektnummer
         
         xx=x[0][0]
+        if xx== None:
+            xx=0
         while b<=xx:
             
             liste=[]
@@ -88,6 +90,8 @@ def auswahl():
         cursor.execute(sql)
         x=cursor.fetchall() #max Projektnummer
         xx=x[0][0]
+        if xx== None:
+            xx=0
         while b<=xx:
             
             liste=[]
@@ -164,6 +168,8 @@ def auswahl():
             cursor.execute(sql)
             x=cursor.fetchall() #max Projektnummer
             xx=x[0][0]
+            if xx== None:
+                xx=0
             while b<=xx:
                 
                 liste=[]
@@ -262,10 +268,3 @@ def auswahl():
     
     connection.commit()
     connection.close()
-                
-auswahl()
-     
-                
-                
-                
-    

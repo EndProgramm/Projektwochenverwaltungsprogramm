@@ -8,7 +8,11 @@ import sqlite3 as sqli
 from tkinter import *
 from tkinter import filedialog  # muss aus unbekannten Gründen extra importiert werden
 from tkinter.messagebox import *
+from zuordnung import auswahl
 
+
+
+                
 
 class Model(object):
     def __init__(self):
@@ -26,7 +30,7 @@ class Model(object):
         sql = "CREATE TABLE schueler(sID INTEGER PRIMARY KEY, sName TEXT, sVName TEXT, sJahrg INTEGER, sKla INTEGER, sErst INTEGER, sZweit INTEGER, sDritt INTEGER, sZu INTEGER);"
         cursor.execute(sql)
 
-        print('Datenbank schuelerliste.db mit Tabellen mitarbeiter und projekte angelegt.')
+        print('Datenbank pwvwp.db mit Tabellen mitarbeiter und projekte angelegt.')
         connection.commit()
         connection.close()
 
@@ -47,8 +51,7 @@ class Model(object):
                     0] + "', '" + row[1] + "', '" + row[2] + "', '" + row[3] + "', '" + row[4] + "', '" + row[
                           5] + "', '" + row[6] + "', NULL);"
                 cur.execute(sql)
-            else:
-                print('Eintrag bereits vorhanden!')
+            
 
         # importieren der plcsv Datei
         file = open(plcsv, 'r')
@@ -61,9 +64,7 @@ class Model(object):
                 sql = "INSERT INTO projekte(pName, pJahrg, pNum, pMaxS) VALUES('" + row[0] + "', '" + row[1] + "', '" + \
                       row[2] + "', '" + row[3] + "');"
                 cur.execute(sql)
-            else:
-                print('Eintrag bereits vorhanden!')
-        print('CSV-Dateien importiert!')
+            
 
         con.commit()
         con.close()
@@ -88,10 +89,13 @@ class Model(object):
 
 class View(Tk):
     def __init__(self, callback_imp, callback_exp, callback_bee, callback_J5, callback_J6, callback_J7, callback_J8, callback_J9,
-                 callback_J10, callback_J11, callback_J12, callback_J13, hinzu):
+                 callback_J10, callback_J11, callback_J12, callback_J13, hinzu, callback_a1, callback_a2, callback_a3, callback_a4, callback_a5,
+                 callback_a6, callback_a7, callback_andern):
         Tk.__init__(self)
         self.title("Projektwochenverwaltungsprogramm")
         self.geometry('600x300')
+        self.maxsize(600,300)
+        self.minsize(600,300)
         # bestimmen der Callbacks
         self.callback_imp = callback_imp
         self.callback_exp = callback_exp
@@ -105,10 +109,18 @@ class View(Tk):
         self.callback_J11 = callback_J11
         self.callback_J12 = callback_J12
         self.callback_J13 = callback_J13
+        self.callback_a1 = callback_a1
+        self.callback_a2 = callback_a2
+        self.callback_a3 = callback_a3
+        self.callback_a4 = callback_a4
+        self.callback_a5 = callback_a5
+        self.callback_a6 = callback_a6
+        self.callback_a7 = callback_a7
+        self.callback_andern = callback_andern
         self.hinzufugen=hinzu
-
         self.rahmen1 = Frame(master=self)
         self.rahmen2 = Frame(master=self)
+        
         self.rahmen11 = Frame(master=self.rahmen1)
 
         # erstellen des Menüs
@@ -121,6 +133,7 @@ class View(Tk):
         self.menubar.add_cascade(label="Datei", menu=self.filemenu)
         self.fmenu=Menu(self.menubar, tearoff=0)
         self.fmenu.add_command(label="Schüler hinzufügen", command=self.schulerhin)
+        self.fmenu.add_command(label="Schüler �ndern", command=self.andern)
         self.menubar.add_cascade(label="Schüler", menu=self.fmenu)
         self.config(menu=self.menubar)
 
@@ -155,14 +168,19 @@ class View(Tk):
             anchor=W, side=LEFT)
         self.r8 = Radiobutton(self.rahmen11, text="12", variable=self.v, value=8, command=self.callback_J12).pack(
             anchor=W, side=LEFT)
-        self.r9 = Radiobutton(self.rahmen11, text="13", variable=self.v, value=9, command=self.callback_J13).pack(
+        self.r9 = Radiobutton(self.rahmen11, text="Alle", variable=self.v, value=9, command=self.callback_J13).pack(
             anchor=W, side=LEFT)
+        
+        self.b2=Button(text="Zuordnen", command=auswahl)
+        self.b2.place(x=10,y=260,width=580, height=30)
         
         
     def schulerhin(self):
         neu=Tk()
         neu.title("Neue Schüler")
         neu.geometry('780x110')
+        neu.maxsize(780,110)
+        neu.minsize(780,110)
         self.l1=Label(master=neu, text="Vorname")
         self.l1.place(x=10,y=10,width=100)
         self.l2=Label(master=neu, text="Nachname")
@@ -194,17 +212,58 @@ class View(Tk):
         self.e7=Entry(master=neu)
         self.e7.place(x=670,y=40,width=100)
 
+        
+        connection = sqli.connect('pwvwp.db')
+        cursor = connection.cursor()
         self.b1=Button(master=neu, text="Schüler hinzufügen", command=self.hinzufugen)
         self.b1.place(x=10,y=70,width=760, height=30)
+        connection.commit()
+        connection.close()
+
+    def andern(self):
+        ande=Tk()
+        ande.title("Sch�ler �ndern")
+        ande.geometry('600x110')
+
         
-
-
+        self.rahmen16 = Frame(master=ande)
+        self.rahmen15 = Frame(master=self.rahmen16)
+        self.rahmen16.pack()
+        self.rahmen15.pack(side=LEFT, fill=X)
+        self.v = IntVar()
+        self.au1 = Radiobutton(self.rahmen15, text="Vorname", variable=self.v, value=1, command=self.callback_a1).pack(
+            anchor=W, side=LEFT)
+        self.au2 = Radiobutton(self.rahmen15, text="Nachname", variable=self.v, value=2, command=self.callback_a2).pack(
+            anchor=W, side=LEFT)
+        self.au3 = Radiobutton(self.rahmen15, text="Klasse", variable=self.v, value=3, command=self.callback_a3).pack(
+            anchor=W, side=LEFT)
+        self.au4 = Radiobutton(self.rahmen15, text="Jahrgang", variable=self.v, value=4, command=self.callback_a4).pack(
+            anchor=W, side=LEFT)
+        self.au5 = Radiobutton(self.rahmen15, text="Erst Wunsch", variable=self.v, value=5, command=self.callback_a5).pack(
+            anchor=W, side=LEFT)
+        self.au6 = Radiobutton(self.rahmen15, text="Zweit Wunsch", variable=self.v, value=6, command=self.callback_a6).pack(
+            anchor=W, side=LEFT)
+        self.au7 = Radiobutton(self.rahmen15, text="Dritt Wunsch", variable=self.v, value=7, command=self.callback_a7).pack(
+            anchor=W, side=LEFT)
+        self.la1=Label(master=ande, text="sID")
+        self.la1.place(x=10,y=20,width=30)
+        self.ea1=Entry(master=ande)
+        self.ea1.place(x=10,y=40,width=30)
+        self.ea2=Entry(master=ande)
+        self.ea2.place(x=50,y=40,width=540)
+        self.b2=Button(master=ande, text="�ndern", command=self.callback_andern)
+        self.b2.place(x=10,y=70,width=580, height=30)
+         
 
 class Controller(object):
     def __init__(self):
         self.model = Model()
         self.view = View(self.importieren, self.exportieren, self.beenden, self.J5, self.J6, self.J7, self.J8, self.J9,
-                         self.J10, self.J11, self.J12, self.J13, self.hinzufugen)
+                         self.J10, self.J11, self.J12, self.J13, self.hinzufugen, self.a1, self.a2, self.a3, self.a4, self.a5,
+                         self.a6, self.a7, self.andernnn)
+        if os.path.exists('projektliste.csv') and os.path.exists('schuelerliste.csv'):
+            self.model.importCSV('schuelerliste.csv', 'projektliste.csv')
+        self.andernx=""
 
     def importieren(self):
         slcsv = filedialog.askopenfilename(title="Schülerliste importieren",
@@ -232,7 +291,6 @@ class Controller(object):
         zweit=self.view.e6.get()
         dritt=self.view.e7.get()
         if self.view.e7.get()=="":
-            print(7)
             dritt="33"
             if self.view.e6.get()=="":
                 zweit="33"
@@ -241,11 +299,28 @@ class Controller(object):
         if self.view.e1.get()!="" and self.view.e2.get()!="" and self.view.e3.get()!="" and self.view.e4.get()!="" :
             connection = sqli.connect('pwvwp.db')
             cursor = connection.cursor()
-            sql="insert into schueler (sName, sVName, sJahrg, sKla, sErst, sZweit, sDritt) VALUES('"+str(self.view.e2.get())+"','"+str(self.view.e1.get())+"','"+str(self.view.e3.get())+"','"+str(self.view.e4.get())+"','"+str(erst)+"','"+str(zweit)+"','"+str(dritt)+"')"        
+            sql = "SELECT COUNT(*) FROM schueler WHERE sName = '"+str(self.view.e2.get())+"' AND sVName = '"+str(self.view.e1.get())+"' AND sKla = '"+str(self.view.e3.get())+"';"
             cursor.execute(sql)
+            test = cursor.fetchall()
+            if not test[0][0]:
+                sql="insert into schueler (sName, sVName, sJahrg, sKla, sErst, sZweit, sDritt) VALUES('"+str(self.view.e2.get())+"','"+str(self.view.e1.get())+"','"+str(self.view.e4.get())+"','"+str(self.view.e3.get())+"','"+str(erst)+"','"+str(zweit)+"','"+str(dritt)+"')"        
+                cursor.execute(sql)
+            else:
+                self.view.b1.config(bg="red")
             connection.commit()
             connection.close()
             self.view.b1.config(bg="green")
+        else:
+            self.view.b1.config(bg="red")
+
+    def andernnn(self):
+        if self.andernx!="" and self.view.ea1.get()!="":
+            connection = sqli.connect('pwvwp.db')
+            cursor = connection.cursor()
+            sql="update schueler set "+self.andernx+"='"+str(self.view.ea2.get())+"' where sID like '"+str(self.view.ea1.get())+"'"        
+            cursor.execute(sql)
+            connection.commit()
+            connection.close()
 
     def J5(self):
         pass
@@ -273,6 +348,28 @@ class Controller(object):
 
     def J13(self):
         pass
+
+    def a1(self):
+        self.andernx="sVName"
+
+    def a2(self):
+        self.andernx="sName"
+
+    def a3(self):
+        self.andernx="sKla"
+
+    def a4(self):
+        self.andernx="sJahrg"
+
+    def a5(self):
+        self.andernx="sErst"
+
+    def a6(self):
+        self.andernx="sZweit"
+
+    def a7(self):
+        self.andernx="sDritt"
+
 
 
 c = Controller()
