@@ -2,7 +2,7 @@
 # Autoren: Martin, Max, Vincent, Christoph, Lia; erstellt: 24.02.2020
 # Der Projektwochenmanager zum zuordnen aller Schüler zu Projekten
 
-import csv, os, random
+import csv, os, random, time
 import sqlite3 as sqli
 from tkinter import *
 from tkinter import filedialog  # muss aus unbekannten Gründen extra importiert werden
@@ -170,7 +170,7 @@ class Model(object):
     def einfuegen(self, tabelle, spalten_namen_tuple, value_tuple):
         con = sqli.connect('pwvwp.db')
         cur = con.cursor()
-        sql = "insert into " + tabelle + "("
+        sql = "INSERT INTO " + tabelle + "("
         for i in range(len(spalten_namen_tuple)):
             if i == len(spalten_namen_tuple) - 1:
                 sql += spalten_namen_tuple[i] + ")"
@@ -331,20 +331,33 @@ class Controller(object):
                 b.grid(row=i, column=j)
 
     def hinzufugen(self):
+        for entry in self.view.schue_entrys:
+            entry.config(bg='white')
         erst = self.view.schue_entrys[4].get()
         zweit = self.view.schue_entrys[5].get()
         dritt = self.view.schue_entrys[6].get()
-        if self.view.schue_entrys[6].get() == "":
+        if dritt == "":
             dritt = "33"
-            if self.view.schue_entrys[5].get() == "":
-                zweit = "33"
-                if self.view.schue_entrys[4].get() == "":
-                    erst = "33"
+        if zweit == "":
+            zweit = "33"
+        if erst == "":
+            erst = "33"
         if self.view.schue_entrys[0].get() != "" and self.view.schue_entrys[1].get() != "" and \
                 self.view.schue_entrys[2].get() != "" and self.view.schue_entrys[3].get() != "":
             self.model.einfuegen('schueler', ('sName', 'sVName', 'sJahrg', 'sKla', 'sErst', 'sZweit', 'sDritt'),
                                  (self.view.schue_entrys[1].get(), self.view.schue_entrys[0].get(),
                                   self.view.schue_entrys[2].get(), self.view.schue_entrys[3].get(), erst, zweit, dritt))
+            self.view.ro_botton.config(bg="green")
+            for entry in self.view.schue_entrys:
+                entry.delete(0, 'end')
+        else:
+            self.view.ro_botton.config(bg="red")
+            for i in range(4):
+                if self.view.schue_entrys[i].get() == "":
+                    self.view.schue_entrys[i].config(bg='red')
+        self.view.update()
+        time.sleep(0.1)
+        self.view.ro_botton.config(bg="white")
 
     def J5(self):
         showwarning('Noch nicht ausgereift', 'Dieser Teil wurde noch nicht Programmiert')
