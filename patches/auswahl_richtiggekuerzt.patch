@@ -1,0 +1,187 @@
+Index: main.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>windows-1252
+===================================================================
+--- main.py	(revision 4f4ad6b044c61a196d7f62a481fbb1bc9d3b2af6)
++++ main.py	(date 1586018236917)
+@@ -2,7 +2,7 @@
+ # Autoren: Martin, Max, Vincent, Christoph, Lia; erstellt: 24.02.2020
+ # Der Projektwochenmanager zum zuordnen aller Schüler zu Projekten
+ 
+-import csv, random, os
++import csv, os, random
+ import sqlite3 as sqli
+ from tkinter import *
+ from tkinter import filedialog  # muss aus unbekannten Gründen extra importiert werden
+@@ -17,15 +17,14 @@
+ 
+     def dbAnlegen(self):
+         connection = sqli.connect('pwvwp.db')
+-        cur = connection.cursor()
++        cursor = connection.cursor()
+ 
+         # Tabellen erzeugen
+         sql = "CREATE TABLE projekte(pID INTEGER PRIMARY KEY, pName TEXT, pJahrg INTEGER, pNum INTEGER, pMaxS INTEGER)"
+-        cur.execute(sql)
++        cursor.execute(sql)
+ 
+-        sql = "CREATE TABLE schueler(sID INTEGER PRIMARY KEY, sName TEXT, sVName TEXT, sJahrg INTEGER, sKla INTEGER, " \
+-              "sErst INTEGER, sZweit INTEGER, sDritt INTEGER, sZu INTEGER);"
+-        cur.execute(sql)
++        sql = "CREATE TABLE schueler(sID INTEGER PRIMARY KEY, sName TEXT, sVName TEXT, sJahrg INTEGER, sKla INTEGER, sErst INTEGER, sZweit INTEGER, sDritt INTEGER, sZu INTEGER);"
++        cursor.execute(sql)
+ 
+         print('Datenbank schuelerliste.db mit Tabellen mitarbeiter und projekte angelegt.')
+         connection.commit()
+@@ -59,32 +58,13 @@
+             cur.execute(sql)
+             test = cur.fetchall()
+             if not test[0][0]:
+-                sql = "INSERT INTO projekte(pName, pJahrg, pNum, pMaxS) VALUES('" + row[0] + "', '" + row[1] + "', '" +\
++                sql = "INSERT INTO projekte(pName, pJahrg, pNum, pMaxS) VALUES('" + row[0] + "', '" + row[1] + "', '" + \
+                       row[2] + "', '" + row[3] + "');"
+                 cur.execute(sql)
+             else:
+                 print('Eintrag bereits vorhanden!')
+         print('CSV-Dateien importiert!')
+ 
+-        con.commit()
+-        con.close()
+-
+-    def einfuegen(self, tabelle, spalten_namen_tuple, value_tuple):
+-        con = sqli.connect('pwvwp.db')
+-        cur = con.cursor()
+-        sql = "insert into " + tabelle + "("
+-        for i in range(len(spalten_namen_tuple)):
+-            if i == len(spalten_namen_tuple) - 1:
+-                sql += spalten_namen_tuple[i] + ")"
+-            else:
+-                sql += spalten_namen_tuple[i] + ", "
+-        sql += " VALUES('"
+-        for i in range(len(value_tuple)):
+-            if i == len(value_tuple) - 1:
+-                sql += value_tuple[i] + "');"
+-            else:
+-                sql += value_tuple[i] + "', '"
+-        cur.execute(sql)
+         con.commit()
+         con.close()
+ 
+@@ -113,7 +93,8 @@
+                     y = 0  # zaehler sID
+                     while y <= z:
+                         sql = "select sID FROM schueler WHERE '" + str(
+-                            jahrg) + "' like sJahrg and sZu is NULL and '" + str(b) + "' like " + wahl + " and '" + str(
++                            jahrg) + "' like sJahrg and sZu is NULL and '" + str(
++                            b) + "' like " + wahl + " and '" + str(
+                             y) + "' like sID;"  # Ermittlung von Schülern in jahrg jahrgang und b erstwahl
+                         cur.execute(sql)
+                         f = cur.fetchall()
+@@ -129,7 +110,8 @@
+                         if wahl == 'sErst':
+                             maxanz = maxanz0[0][0]
+                         else:
+-                            sql = "select count(sID) FROM schueler WHERE '" + str(jahrg) + "' like sJahrg and '" + str(
++                            sql = "select count(sID) FROM schueler WHERE '" + str(
++                                jahrg) + "' like sJahrg and '" + str(
+                                 b) + "' like sZu;"
+                             cur.execute(sql)
+                             maxanz1 = cur.fetchall()
+@@ -182,9 +164,29 @@
+                             schuler[0][0]) + "'like sID ;"
+                         cur.execute(sql)
+                         schuler.pop(0)
+-        con.commit()
+-        con.close()
++            con.commit()
++            con.close()
+ 
++    def einfuegen(self, tabelle, spalten_namen_tuple, value_tuple):
++        con = sqli.connect('pwvwp.db')
++        cur = con.cursor()
++        sql = "insert into " + tabelle + "("
++        for i in range(len(spalten_namen_tuple)):
++            if i == len(spalten_namen_tuple) - 1:
++                sql += spalten_namen_tuple[i] + ")"
++            else:
++                sql += spalten_namen_tuple[i] + ", "
++        sql += " VALUES('"
++        for i in range(len(value_tuple)):
++            if i == len(value_tuple) - 1:
++                sql += value_tuple[i] + "');"
++            else:
++                sql += value_tuple[i] + "', '"
++        print(sql)
++        cur.execute(sql)
++        con.commit()
++        con.close()
++
+     def ausgabe(self, tabelle):
+         con = sqli.connect('pwvwp.db')
+         cur = con.cursor()
+@@ -199,14 +201,15 @@
+ 
+ #    def dbAuslesen(self):
+ #        con = sqli.connect('pwvwp.db')
+-#        cur = con.cur()
++#        cur = con.cursor()
+ #        
+ #        sql = "SELECT sName FROM schueler"
+ 
+ 
+ class View(Tk):
+-    def __init__(self, callback_imp, callback_exp, callback_bee, callback_J5, callback_J6, callback_J7, callback_J8,
+-                 callback_J9, callback_J10, callback_J11, callback_J12, callback_J13, callback_hin):
++    def __init__(self, callback_imp, callback_exp, callback_bee, callback_j5, callback_j6, callback_j7, callback_j8,
++                 callback_j9,
++                 callback_j10, callback_j11, callback_j12, callback_j13, callback_hin):
+         Tk.__init__(self)
+         self.title("Projektwochenverwaltungsprogramm")
+         self.geometry('600x300')
+@@ -214,15 +217,15 @@
+         self.callback_imp = callback_imp
+         self.callback_exp = callback_exp
+         self.callback_bee = callback_bee
+-        self.callback_J5 = callback_J5
+-        self.callback_J6 = callback_J6
+-        self.callback_J7 = callback_J7
+-        self.callback_J8 = callback_J8
+-        self.callback_J9 = callback_J9
+-        self.callback_J10 = callback_J10
+-        self.callback_J11 = callback_J11
+-        self.callback_J12 = callback_J12
+-        self.callback_J13 = callback_J13
++        self.callback_J5 = callback_j5
++        self.callback_J6 = callback_j6
++        self.callback_J7 = callback_j7
++        self.callback_J8 = callback_j8
++        self.callback_J9 = callback_j9
++        self.callback_J10 = callback_j10
++        self.callback_J11 = callback_j11
++        self.callback_J12 = callback_j12
++        self.callback_J13 = callback_j13
+         self.callback_hin = callback_hin
+         self.schue_labels = {}
+         self.labelnames = ["Vorname", "Nachname", "Klasse", "Jahrg", "Erst Wunsch", "Zweit Wunsch", "Dritt Wunsch"]
+@@ -370,5 +373,4 @@
+ 
+ 
+ c = Controller()
+-c.model.auswahl()
+ c.view.mainloop()
+Index: .idea/encodings.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- .idea/encodings.xml	(date 1586018035256)
++++ .idea/encodings.xml	(date 1586018035256)
+@@ -0,0 +1,6 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project version="4">
++  <component name="Encoding">
++    <file url="file://$PROJECT_DIR$/patches/auswahl_gekürzt.patch" charset="windows-1252" />
++  </component>
++</project>
+\ No newline at end of file

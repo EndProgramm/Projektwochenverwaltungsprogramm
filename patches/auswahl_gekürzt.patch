@@ -1,0 +1,284 @@
+Index: main.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>windows-1252
+===================================================================
+--- main.py	(revision 3d9af027fd15be30db67d895033162e8f647eee5)
++++ main.py	(date 1586016297052)
+@@ -2,8 +2,7 @@
+ # Autoren: Martin, Max, Vincent, Christoph, Lia; erstellt: 24.02.2020
+ # Der Projektwochenmanager zum zuordnen aller Schüler zu Projekten
+ 
+-import csv
+-import os
++import csv, random, os
+ import sqlite3 as sqli
+ from tkinter import *
+ from tkinter import filedialog  # muss aus unbekannten Gründen extra importiert werden
+@@ -12,19 +11,21 @@
+ 
+ class Model(object):
+     def __init__(self):
++        self.wahlen = ('sErst', 'sZweit', 'sDritt')
+         if not os.path.exists('pwvwp.db'):
+             self.dbAnlegen()
+ 
+     def dbAnlegen(self):
+         connection = sqli.connect('pwvwp.db')
+-        cursor = connection.cursor()
++        cur = connection.cursor()
+ 
+         # Tabellen erzeugen
+         sql = "CREATE TABLE projekte(pID INTEGER PRIMARY KEY, pName TEXT, pJahrg INTEGER, pNum INTEGER, pMaxS INTEGER)"
+-        cursor.execute(sql)
++        cur.execute(sql)
+ 
+-        sql = "CREATE TABLE schueler(sID INTEGER PRIMARY KEY, sName TEXT, sVName TEXT, sJahrg INTEGER, sKla INTEGER, sErst INTEGER, sZweit INTEGER, sDritt INTEGER, sZu INTEGER);"
+-        cursor.execute(sql)
++        sql = "CREATE TABLE schueler(sID INTEGER PRIMARY KEY, sName TEXT, sVName TEXT, sJahrg INTEGER, sKla INTEGER, " \
++              "sErst INTEGER, sZweit INTEGER, sDritt INTEGER, sZu INTEGER);"
++        cur.execute(sql)
+ 
+         print('Datenbank schuelerliste.db mit Tabellen mitarbeiter und projekte angelegt.')
+         connection.commit()
+@@ -58,7 +59,7 @@
+             cur.execute(sql)
+             test = cur.fetchall()
+             if not test[0][0]:
+-                sql = "INSERT INTO projekte(pName, pJahrg, pNum, pMaxS) VALUES('" + row[0] + "', '" + row[1] + "', '" + \
++                sql = "INSERT INTO projekte(pName, pJahrg, pNum, pMaxS) VALUES('" + row[0] + "', '" + row[1] + "', '" +\
+                       row[2] + "', '" + row[3] + "');"
+                 cur.execute(sql)
+             else:
+@@ -71,23 +72,119 @@
+     def einfuegen(self, tabelle, spalten_namen_tuple, value_tuple):
+         con = sqli.connect('pwvwp.db')
+         cur = con.cursor()
+-        sql = "insert into "+tabelle+"("
++        sql = "insert into " + tabelle + "("
+         for i in range(len(spalten_namen_tuple)):
+-            if i == len(spalten_namen_tuple)-1:
++            if i == len(spalten_namen_tuple) - 1:
+                 sql += spalten_namen_tuple[i] + ")"
+             else:
+                 sql += spalten_namen_tuple[i] + ", "
+         sql += " VALUES('"
+         for i in range(len(value_tuple)):
+-            if i == len(value_tuple)-1:
++            if i == len(value_tuple) - 1:
+                 sql += value_tuple[i] + "');"
+             else:
+                 sql += value_tuple[i] + "', '"
+-        print(sql)
+         cur.execute(sql)
+         con.commit()
+         con.close()
+ 
++    def auswahl(self):
++        con = sqli.connect('pwvwp.db')
++        cur = con.cursor()
++        for wahl in self.wahlen:
++            jahrg = 4  # Jahrgang
++            while jahrg <= 11:
++                jahrg += 1
++                b = 1  # Projekt
++                sql = "select max(pNum) FROM projekte WHERE '" + str(
++                    jahrg) + "' like pJahrg;"  # max Projektnummer wird ermittelt
++                cur.execute(sql)
++                x = cur.fetchall()  # max Projektnummer
++                xx = x[0][0]
++                while b <= xx:
++                    liste = []
++                    sql = "select max(sID) FROM schueler WHERE '" + str(jahrg) + "' like sJahrg and '" + str(
++                        b) + "' like " + wahl + ";"  # max sID wird ermittelt
++                    cur.execute(sql)
++                    zz = cur.fetchall()
++                    z = 0
++                    if zz[0][0]:
++                        z = zz[0][0]
++                    y = 0  # zaehler sID
++                    while y <= z:
++                        sql = "select sID FROM schueler WHERE '" + str(
++                            jahrg) + "' like sJahrg and sZu is NULL and '" + str(b) + "' like " + wahl + " and '" + str(
++                            y) + "' like sID;"  # Ermittlung von Schülern in jahrg jahrgang und b erstwahl
++                        cur.execute(sql)
++                        f = cur.fetchall()
++                        if f:
++                            ff = f[0][0]
++                            liste.append(ff)
++                        y += 1
++                    sql = "select pMaxS FROM projekte WHERE '" + str(jahrg) + "' like pJahrg and '" + str(
++                        b) + "' like pNum;"
++                    cur.execute(sql)
++                    maxanz0 = cur.fetchall()
++                    if maxanz0:
++                        if wahl == 'sErst':
++                            maxanz = maxanz0[0][0]
++                        else:
++                            sql = "select count(sID) FROM schueler WHERE '" + str(jahrg) + "' like sJahrg and '" + str(
++                                b) + "' like sZu;"
++                            cur.execute(sql)
++                            maxanz1 = cur.fetchall()
++                            maxanz = maxanz0[0][0] - maxanz1[0][0]
++                    else:
++                        maxanz = 0
++                    if maxanz > 0 and liste:
++                        if len(liste) <= maxanz:
++                            m = 0  # zähler der schüler
++                            while m < len(liste):
++                                sql = "update schueler set sZu='" + str(b) + "' where '" + str(liste[m]) + "'like sID;"
++                                cur.execute(sql)
++                                m += 1
++                        else:
++                            m = 0  # zähler der schüler
++                            listeaus1 = random.choices(liste, k=maxanz)
++                            while m < maxanz:
++                                sql = "update schueler set sZu='" + str(b) + "' where '" + str(
++                                    listeaus1[m]) + "'like sID;"
++                                cur.execute(sql)
++                                m += 1
++                    b = b + 1
++        sql = "select count(sID) from schueler WHERE 8 like sJahrg"
++        cur.execute(sql)
++        schuler = cur.fetchall()
++        jahrg = 4  # Jahrgang
++        while jahrg <= 11:
++            jahrg += 1
++            sql = "select pNum from projekte WHERE '" + str(jahrg) + "' like pJahrg"
++            cur.execute(sql)
++            projekte = cur.fetchall()
++            sql = "select sID from schueler WHERE '" + str(jahrg) + "' like sJahrg and sZu is NULL"
++            cur.execute(sql)
++            schuler = cur.fetchall()
++            while len(schuler) > 0 and len(projekte) > 0:
++                sql = "select pMaxS from projekte WHERE '" + str(jahrg) + "' like pJahrg and '" + str(
++                    projekte[0][0]) + "' like pNum"
++                cur.execute(sql)
++                maxanz0 = cur.fetchall()
++                if maxanz0:
++                    sql = "select count(sID) from schueler WHERE '" + str(jahrg) + "' like sJahrg and '" + str(
++                        projekte[0][0]) + "' like sZu"
++                    cur.execute(sql)
++                    maxanz1 = cur.fetchall()
++                    maxanz = maxanz0[0][0] - maxanz1[0][0]
++                    if maxanz <= 0:
++                        projekte.pop(0)
++                    else:
++                        sql = "update schueler set sZu='" + str(projekte[0][0]) + "' where '" + str(
++                            schuler[0][0]) + "'like sID ;"
++                        cur.execute(sql)
++                        schuler.pop(0)
++        con.commit()
++        con.close()
++
+     def ausgabe(self, tabelle):
+         con = sqli.connect('pwvwp.db')
+         cur = con.cursor()
+@@ -102,15 +199,14 @@
+ 
+ #    def dbAuslesen(self):
+ #        con = sqli.connect('pwvwp.db')
+-#        cur = con.cursor()
++#        cur = con.cur()
+ #        
+ #        sql = "SELECT sName FROM schueler"
+ 
+ 
+ class View(Tk):
+     def __init__(self, callback_imp, callback_exp, callback_bee, callback_J5, callback_J6, callback_J7, callback_J8,
+-                 callback_J9,
+-                 callback_J10, callback_J11, callback_J12, callback_J13, callback_hin):
++                 callback_J9, callback_J10, callback_J11, callback_J12, callback_J13, callback_hin):
+         Tk.__init__(self)
+         self.title("Projektwochenverwaltungsprogramm")
+         self.geometry('600x300')
+@@ -132,7 +228,7 @@
+         self.labelnames = ["Vorname", "Nachname", "Klasse", "Jahrg", "Erst Wunsch", "Zweit Wunsch", "Dritt Wunsch"]
+         self.schue_entrys = []
+ 
+-        self.ro_botton = None   # your ordinary buttom
++        self.ro_botton = None  # your ordinary buttom
+         self.rahmen1 = Frame(master=self)
+         self.rahmen2 = Frame(master=self)
+         self.rahmen11 = Frame(master=self.rahmen1)
+@@ -189,11 +285,11 @@
+         neu.title("Neue Schüler")
+         neu.geometry('780x110')
+         for i in range(len(self.labelnames)):
+-            self.schue_labels.update({self.labelnames[i]:Label(neu, text=self.labelnames[i])})
+-            self.schue_labels[self.labelnames[i]].place(x=10+(110*i), y=10, width=100)
++            self.schue_labels.update({self.labelnames[i]: Label(neu, text=self.labelnames[i])})
++            self.schue_labels[self.labelnames[i]].place(x=10 + (110 * i), y=10, width=100)
+         for i in range(len(self.labelnames)):
+             self.schue_entrys.append(Entry(neu))
+-            self.schue_entrys[-1].place(x=10+(110*i), y=40, width=100)
++            self.schue_entrys[-1].place(x=10 + (110 * i), y=40, width=100)
+ 
+         self.ro_botton = Button(master=neu, text="Schüler hinzufügen", command=self.callback_hin)
+         self.ro_botton.place(x=330, y=70, width=120, height=30)
+@@ -213,7 +309,7 @@
+         self.model.importCSV(slcsv, plcsv)
+ 
+     def exportieren(self):
+-        pass
++        showwarning('Noch nicht ausgereift', 'Dieser Teil wurde noch nicht Programmiert')
+ 
+     def beenden(self):
+         x = askokcancel(title='Beenden',
+@@ -234,45 +330,45 @@
+         zweit = self.view.schue_entrys[5].get()
+         dritt = self.view.schue_entrys[6].get()
+         if self.view.schue_entrys[6].get() == "":
+-            print(7)
+             dritt = "33"
+             if self.view.schue_entrys[5].get() == "":
+                 zweit = "33"
+                 if self.view.schue_entrys[4].get() == "":
+                     erst = "33"
+-        if self.view.schue_entrys[0].get() != "" and self.view.schue_entrys[1].get() != "" and\
++        if self.view.schue_entrys[0].get() != "" and self.view.schue_entrys[1].get() != "" and \
+                 self.view.schue_entrys[2].get() != "" and self.view.schue_entrys[3].get() != "":
+             self.model.einfuegen('schueler', ('sName', 'sVName', 'sJahrg', 'sKla', 'sErst', 'sZweit', 'sDritt'),
+                                  (self.view.schue_entrys[1].get(), self.view.schue_entrys[0].get(),
+                                   self.view.schue_entrys[2].get(), self.view.schue_entrys[3].get(), erst, zweit, dritt))
+ 
+     def J5(self):
+-        pass
++        showwarning('Noch nicht ausgereift', 'Dieser Teil wurde noch nicht Programmiert')
+ 
+     def J6(self):
+-        pass
++        showwarning('Noch nicht ausgereift', 'Dieser Teil wurde noch nicht Programmiert')
+ 
+     def J7(self):
+-        pass
++        showwarning('Noch nicht ausgereift', 'Dieser Teil wurde noch nicht Programmiert')
+ 
+     def J8(self):
+-        pass
++        showwarning('Noch nicht ausgereift', 'Dieser Teil wurde noch nicht Programmiert')
+ 
+     def J9(self):
+-        pass
++        showwarning('Noch nicht ausgereift', 'Dieser Teil wurde noch nicht Programmiert')
+ 
+     def J10(self):
+-        pass
++        showwarning('Noch nicht ausgereift', 'Dieser Teil wurde noch nicht Programmiert')
+ 
+     def J11(self):
+-        pass
++        showwarning('Noch nicht ausgereift', 'Dieser Teil wurde noch nicht Programmiert')
+ 
+     def J12(self):
+-        pass
++        showwarning('Noch nicht ausgereift', 'Dieser Teil wurde noch nicht Programmiert')
+ 
+     def J13(self):
+-        pass
++        showwarning('Noch nicht ausgereift', 'Dieser Teil wurde noch nicht Programmiert')
+ 
+ 
+ c = Controller()
++c.model.auswahl()
+ c.view.mainloop()
