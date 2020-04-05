@@ -26,7 +26,7 @@ class Model(object):
         sql = "CREATE TABLE schueler(sID INTEGER PRIMARY KEY, sName TEXT, sVName TEXT, sJahrg INTEGER, sKla INTEGER, sErst INTEGER, sZweit INTEGER, sDritt INTEGER, sZu INTEGER);"
         cursor.execute(sql)
 
-        print('Datenbank schuelerliste.db mit Tabellen mitarbeiter und projekte angelegt.')
+        print('Datenbank pwvwp.db mit Tabellen mitarbeiter und projekte angelegt.')
         connection.commit()
         connection.close()
 
@@ -164,8 +164,8 @@ class Model(object):
                             schuler[0][0]) + "'like sID ;"
                         cur.execute(sql)
                         schuler.pop(0)
-            con.commit()
-            con.close()
+        con.commit()
+        con.close()
 
     def einfuegen(self, tabelle, spalten_namen_tuple, value_tuple):
         con = sqli.connect('pwvwp.db')
@@ -209,10 +209,12 @@ class Model(object):
 class View(Tk):
     def __init__(self, callback_imp, callback_exp, callback_bee, callback_j5, callback_j6, callback_j7, callback_j8,
                  callback_j9,
-                 callback_j10, callback_j11, callback_j12, callback_j13, callback_hin):
+                 callback_j10, callback_j11, callback_j12, callback_ja, callback_hin, callback_aus):
         Tk.__init__(self)
         self.title("Projektwochenverwaltungsprogramm")
-        self.geometry('600x300')
+        self.geometry('750x300')
+        self.maxsize(750, 300)
+        self.minsize(750, 300)
         # bestimmen der Callbacks
         self.callback_imp = callback_imp
         self.callback_exp = callback_exp
@@ -225,16 +227,26 @@ class View(Tk):
         self.callback_J10 = callback_j10
         self.callback_J11 = callback_j11
         self.callback_J12 = callback_j12
-        self.callback_J13 = callback_j13
+        self.callback_JA = callback_ja
+        self.callback_aus = callback_aus
         self.callback_hin = callback_hin
-        self.schue_labels = {}
-        self.labelnames = ["Vorname", "Nachname", "Klasse", "Jahrg", "Erst Wunsch", "Zweit Wunsch", "Dritt Wunsch"]
-        self.schue_entrys = []
+        self.labels = {}
+        self.labelnames = ("Vorname", "Nachname", "Klasse", "Jahrg", "Erst Wunsch", "Zweit Wunsch", "Dritt Wunsch")
+        self.entrys = {}
+        self.buttons = {}
 
-        self.ro_botton = None  # your ordinary buttom
+        self.ande_v = None
+        self.ande_r1 = None
+        self.ande_r2 = None
+        self.ande_r3 = None
+        self.ande_r4 = None
+        self.ande_r5 = None
+        self.ande_r6 = None
+        self.ande_r7 = None
         self.rahmen1 = Frame(master=self)
         self.rahmen2 = Frame(master=self)
         self.rahmen11 = Frame(master=self.rahmen1)
+        self.rahmen_ande = None
 
         # erstellen des Menüs
         self.menubar = Menu(self)
@@ -245,18 +257,24 @@ class View(Tk):
         self.filemenu.add_command(label="Beenden", command=self.callback_bee)
         self.menubar.add_cascade(label="Datei", menu=self.filemenu)
         self.fmenu = Menu(self.menubar, tearoff=0)
-        self.fmenu.add_command(label="Schüler hinzufügen", command=self.schulerhin)
+        self.fmenu.add_command(label="hinzufügen", command=self.schulerhin)
+        self.fmenu.add_command(label="ändern", command=self.andern)
         self.menubar.add_cascade(label="Schüler", menu=self.fmenu)
         self.config(menu=self.menubar)
 
-        self.scrollbar = Scrollbar(self.rahmen2)
-        self.scrollbar.pack(side=RIGHT, fill=Y)
+        # scrollbar
+        def myfunction(event):
+            self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 
-        self.listbox = Listbox(self.rahmen2, yscrollcommand=self.scrollbar.set)
-        for i in range(1000):
-            self.listbox.insert(END, str(i))
-        self.listbox.pack(side=RIGHT, fill=BOTH)
-        self.scrollbar.config(command=self.listbox.yview)
+        self.canvas = Canvas(self.rahmen2, width=1000)
+        self.frame = Frame(self.canvas)
+        self.scrollbar = Scrollbar(self.rahmen2, orient="vertical", command=self.canvas.yview)
+        self.canvas.configure(yscrollcommand=self.scrollbar.set)
+
+        self.scrollbar.pack(side="right", fill="y")
+        self.canvas.pack(side="left")
+        self.canvas.create_window((0, 0), window=self.frame, anchor='nw')
+        self.frame.bind("<Configure>", myfunction)
 
         self.rahmen1.pack()
         self.rahmen2.pack(side=LEFT)
@@ -280,29 +298,62 @@ class View(Tk):
             anchor=W, side=LEFT)
         self.r8 = Radiobutton(self.rahmen11, text="12", variable=self.v, value=8, command=self.callback_J12).pack(
             anchor=W, side=LEFT)
-        self.r9 = Radiobutton(self.rahmen11, text="13", variable=self.v, value=9, command=self.callback_J13).pack(
+        self.r9 = Radiobutton(self.rahmen11, text="Alle", variable=self.v, value=9, command=self.callback_JA).pack(
             anchor=W, side=LEFT)
+
+        self.zuord_but = Button(text="Zuordnen", command=self.callback_aus)
+        self.zuord_but.place(x=10, y=260, width=600, height=30)
 
     def schulerhin(self):
         neu = Tk()
         neu.title("Neue Schüler")
         neu.geometry('780x110')
         for i in range(len(self.labelnames)):
-            self.schue_labels.update({self.labelnames[i]: Label(neu, text=self.labelnames[i])})
-            self.schue_labels[self.labelnames[i]].place(x=10 + (110 * i), y=10, width=100)
+            self.labels.update({self.labelnames[i]: Label(neu, text=self.labelnames[i])})
+            self.labels[self.labelnames[i]].place(x=10 + (110 * i), y=10, width=100)
         for i in range(len(self.labelnames)):
-            self.schue_entrys.append(Entry(neu))
-            self.schue_entrys[-1].place(x=10 + (110 * i), y=40, width=100)
+            self.entrys.update({i: Entry(neu)})
+            self.entrys[i].place(x=10 + (110 * i), y=40, width=100)
+        self.buttons.update({'hin_B': Button(master=neu, text="Schüler hinzufügen", command=self.callback_hin)})
+        self.buttons['hin_B'].place(x=330, y=70, width=120, height=30)
 
-        self.ro_botton = Button(master=neu, text="Schüler hinzufügen", command=self.callback_hin)
-        self.ro_botton.place(x=330, y=70, width=120, height=30)
+    def andern(self):
+        ande = Tk()
+        ande.title("Schüler ändern")
+        ande.geometry('600x110')
+
+        self.rahmen_ande = Frame(master=ande)
+        self.ande_v = IntVar()
+        self.ande_r1 = Radiobutton(self.rahmen15, text="Vorname", variable=self.ande_v, value=1,
+                                   command=self.callback_a1).pack(anchor=W, side=LEFT)
+        self.ande_r2 = Radiobutton(self.rahmen15, text="Nachname", variable=self.ande_v, value=2,
+                                   command=self.callback_a2).pack(anchor=W, side=LEFT)
+        self.ande_r3 = Radiobutton(self.rahmen15, text="Klasse", variable=self.ande_v, value=3,
+                                   command=self.callback_a3).pack(anchor=W, side=LEFT)
+        self.ande_r4 = Radiobutton(self.rahmen15, text="Jahrgang", variable=self.ande_v, value=4,
+                                   command=self.callback_a4).pack(anchor=W, side=LEFT)
+        self.ande_r5 = Radiobutton(self.rahmen15, text="Erst Wunsch", variable=self.ande_v, value=5,
+                                   command=self.callback_a5).pack(anchor=W, side=LEFT)
+        self.ande_r6 = Radiobutton(self.rahmen15, text="Zweit Wunsch", variable=self.ande_v, value=6,
+                                   command=self.callback_a6).pack(anchor=W, side=LEFT)
+        self.ande_r7 = Radiobutton(self.rahmen15, text="Dritt Wunsch", variable=self.ande_v, value=7,
+                                   command=self.callback_a7).pack(anchor=W, side=LEFT)
+        self.labels.update({'ande_Lab': Label(master=ande, text="sID")})
+        self.labels['andern_Lab'].place(x=10, y=20, width=30)
+        self.entrys.update({'ande_E1': Entry(master=ande)})
+        self.entrys['andern_E1'].place(x=10, y=40, width=30)
+        self.entrys.update({'ande_E2': Entry(master=ande)})
+        self.entrys['ande_E2'].place(x=50, y=40, width=540)
+        self.buttons.update({'ande_B': Button(master=ande, text="ändern", command=self.callback_andern)})
+        self.buttons['ande_B'].place(x=10, y=70, width=580, height=30)
+        self.rahmen_ande.pack(side=LEFT, fill=X)
 
 
 class Controller(object):
     def __init__(self):
         self.model = Model()
         self.view = View(self.importieren, self.exportieren, self.beenden, self.J5, self.J6, self.J7, self.J8, self.J9,
-                         self.J10, self.J11, self.J12, self.J13, self.hinzufugen)
+                         self.J10, self.J11, self.J12, self.JA, self.hinzufugen, self.model.auswahl)
         if os.path.exists('projektliste.csv') and os.path.exists('schuelerliste.csv'):
             self.model.importCSV('schuelerliste.csv', 'projektliste.csv')
 
@@ -331,30 +382,30 @@ class Controller(object):
                 b.grid(row=i, column=j)
 
     def hinzufugen(self):
-        for entry in self.view.schue_entrys:
-            entry.config(bg='white')
-        erst = self.view.schue_entrys[4].get()
-        zweit = self.view.schue_entrys[5].get()
-        dritt = self.view.schue_entrys[6].get()
+        for entry in self.view.entrys:
+            self.view.entrys[entry].config(bg='white')
+        erst = self.view.entrys[4].get()
+        zweit = self.view.entrys[5].get()
+        dritt = self.view.entrys[6].get()
         if dritt == "":
             dritt = "33"
         if zweit == "":
             zweit = "33"
         if erst == "":
             erst = "33"
-        if self.view.schue_entrys[0].get() != "" and self.view.schue_entrys[1].get() != "" and \
-                self.view.schue_entrys[2].get() != "" and self.view.schue_entrys[3].get() != "":
+        if self.view.entrys[0].get() != "" and self.view.entrys[1].get() != "" and \
+                self.view.entrys[2].get() != "" and self.view.entrys[3].get() != "":
             self.model.einfuegen('schueler', ('sName', 'sVName', 'sJahrg', 'sKla', 'sErst', 'sZweit', 'sDritt'),
-                                 (self.view.schue_entrys[1].get(), self.view.schue_entrys[0].get(),
-                                  self.view.schue_entrys[2].get(), self.view.schue_entrys[3].get(), erst, zweit, dritt))
+                                 (self.view.entrys[1].get(), self.view.entrys[0].get(),
+                                  self.view.entrys[2].get(), self.view.entrys[3].get(), erst, zweit, dritt))
             self.view.ro_botton.config(bg="green")
-            for entry in self.view.schue_entrys:
+            for entry in self.view.entrys:
                 entry.delete(0, 'end')
         else:
             self.view.ro_botton.config(bg="red")
             for i in range(4):
-                if self.view.schue_entrys[i].get() == "":
-                    self.view.schue_entrys[i].config(bg='red')
+                if self.view.entrys[i].get() == "":
+                    self.view.entrys[i].config(bg='red')
         self.view.update()
         time.sleep(0.1)
         self.view.ro_botton.config(bg="white")
@@ -383,7 +434,7 @@ class Controller(object):
     def J12(self):
         showwarning('Noch nicht ausgereift', 'Dieser Teil wurde noch nicht Programmiert')
 
-    def J13(self):
+    def JA(self):
         showwarning('Noch nicht ausgereift', 'Dieser Teil wurde noch nicht Programmiert')
 
 
