@@ -36,7 +36,7 @@ class Model(object):
 
         # importieren der slcsv Datei
         file = open(slcsv, 'r')
-        read = csv.reader(file, delimiter=';')
+        read = csv.reader(file, delimiter=',')
         for row in read:
             sql = "SELECT COUNT(*) FROM schueler WHERE sName = '" + row[0] + "' AND sVName = '" + row[
                 1] + "' AND sJahrg = '" + row[2] + "';"
@@ -52,7 +52,7 @@ class Model(object):
 
         # importieren der plcsv Datei
         file = open(plcsv, 'r')
-        read = csv.reader(file, delimiter=';')
+        read = csv.reader(file, delimiter=',')
         for row in read:
             sql = "SELECT COUNT(*) FROM projekte WHERE pName = '" + row[0] + "' AND pJahrg = '" + row[1] + "';"
             cur.execute(sql)
@@ -164,8 +164,8 @@ class Model(object):
                             schuler[0][0]) + "'like sID ;"
                         cur.execute(sql)
                         schuler.pop(0)
-            con.commit()
-            con.close()
+        con.commit()
+        con.close()
 
     def einfuegen(self, tabelle, spalten_namen_tuple, value_tuple):
         con = sqli.connect('pwvwp.db')
@@ -212,7 +212,7 @@ class View(Tk):
                  callback_j10, callback_j11, callback_j12, callback_j13, callback_hin):
         Tk.__init__(self)
         self.title("Projektwochenverwaltungsprogramm")
-        self.geometry('600x300')
+        self.geometry('750x300')
         # bestimmen der Callbacks
         self.callback_imp = callback_imp
         self.callback_exp = callback_exp
@@ -249,19 +249,26 @@ class View(Tk):
         self.menubar.add_cascade(label="Schüler", menu=self.fmenu)
         self.config(menu=self.menubar)
 
-        self.scrollbar = Scrollbar(self.rahmen2)
-        self.scrollbar.pack(side=RIGHT, fill=Y)
+        #scrollbar
+        def myfunction(event):
+            self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        self.canvas=Canvas(self.rahmen2,width=1000)
+        self.frame=Frame(self.canvas)
+        self.scrollbar = Scrollbar(self.rahmen2, orient="vertical", command=self.canvas.yview)
+        self.canvas.configure(yscrollcommand=self.scrollbar.set)
 
-        self.listbox = Listbox(self.rahmen2, yscrollcommand=self.scrollbar.set)
-        for i in range(1000):
-            self.listbox.insert(END, str(i))
-        self.listbox.pack(side=RIGHT, fill=BOTH)
-        self.scrollbar.config(command=self.listbox.yview)
+        self.scrollbar.pack(side="right",fill="y")
+        self.canvas.pack(side="left")
+        self.canvas.create_window((0,0),window=self.frame,anchor='nw')
+        self.frame.bind("<Configure>",myfunction)
 
         self.rahmen1.pack()
         self.rahmen2.pack(side=LEFT)
         self.rahmen11.pack(side=LEFT, fill=X)
         # self.rahmen12.pack(sie=LEFT, fill=X)
+        
+        self.b2=Button(text="Zuordnen")
+        self.b2.place(x=10,y=260,width=600, height=30)
 
         self.v = IntVar()
         self.r1 = Radiobutton(self.rahmen11, text="5", variable=self.v, value=1, command=self.callback_J5).pack(
@@ -305,6 +312,12 @@ class Controller(object):
                          self.J10, self.J11, self.J12, self.J13, self.hinzufugen)
         if os.path.exists('projektliste.csv') and os.path.exists('schuelerliste.csv'):
             self.model.importCSV('schuelerliste.csv', 'projektliste.csv')
+        self.tabelle()
+        self.view.b2.config(command=lambda: self.b2command())
+    
+    def b2command(self):
+        self.model.auswahl()
+        self.tabelleanpassen()
 
     def importieren(self):
         slcsv = filedialog.askopenfilename(title="Schülerliste importieren",
@@ -312,6 +325,7 @@ class Controller(object):
         plcsv = filedialog.askopenfilename(title="Projektliste importieren",
                                            filetypes=(("CSV Datei", "*.csv"), ("all files", "*.*")))
         self.model.importCSV(slcsv, plcsv)
+        self.tabelle()
 
     def exportieren(self):
         showwarning('Noch nicht ausgereift', 'Dieser Teil wurde noch nicht Programmiert')
@@ -323,12 +337,33 @@ class Controller(object):
         if x:
             self.view.destroy()
 
-    def tabelle(self, tabellen_name):
-        x = self.model.ausgabe(tabellen_name)
+    def tabelle(self):
+        x = self.model.ausgabe("schueler")
         for i in range(len(x)):
             for j in range(len(x[0])):
-                b = Label(self.view, text=str(x[i][j]), bg="lightgray")
-                b.grid(row=i, column=j)
+                self.b = Label(self.view.frame, text=str(x[i][j]))
+                self.b.grid(row=i, column=j)
+    
+    def myfunction(self,event):
+            self.view.canvas.configure(scrollregion=self.view.canvas.bbox("all"))
+    def tabelleanpassen(self):
+        self.view.canvas.destroy()
+        
+        self.view.canvas=Canvas(self.view.rahmen2,width=1000)
+        self.view.frame=Frame(self.view.canvas)
+        self.view.scrollbar.config(command=self.view.canvas.yview)
+        self.view.canvas.configure(yscrollcommand=self.view.scrollbar.set)
+
+        self.view.scrollbar.pack(side="right",fill="y")
+        self.view.canvas.pack(side="left")
+        self.view.canvas.create_window((0,0),window=self.view.frame,anchor='nw')
+        self.view.frame.bind("<Configure>",self.myfunction)
+        
+        x = self.model.ausgabe("schueler")
+        for i in range(len(x)):
+            for j in range(len(x[0])):
+                self.b = Label(self.view.frame, text=str(x[i][j]))
+                self.b.grid(row=i, column=j)
 
     def hinzufugen(self):
         for entry in self.view.schue_entrys:
@@ -358,6 +393,7 @@ class Controller(object):
         self.view.update()
         time.sleep(0.1)
         self.view.ro_botton.config(bg="white")
+        self.tabelle()
 
     def J5(self):
         showwarning('Noch nicht ausgereift', 'Dieser Teil wurde noch nicht Programmiert')
