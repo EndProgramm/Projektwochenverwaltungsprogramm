@@ -68,6 +68,31 @@ class Model(object):
         con.commit()
         con.close()
 
+    def exportCSV(self, slcsv, plcsv):
+        con = sqli.connect('pwvwp.db')
+        cur = con.cursor()
+
+        # auslesen der datenbankliste schueler in eine CSV-Datei
+        slfile = csv.writer(slcsv, delimiter=';', quoting=csv.QUOTE_NONE)
+        sql = "SELECT * FROM schueler;"
+        cur.execute(sql)
+        dboutput = cur.fetchall()
+        for spalte in dboutput:
+            spalte = list(spalte)
+            del spalte[0]
+            slfile.writerow(spalte)
+
+        # auslesen der datenbankliste projekte in eine CSV-Datei
+        plfile = csv.writer(plcsv, delimiter=';', quoting=csv.QUOTE_NONE)
+        sql = "SELECT * FROM schueler;"
+        cur.execute(sql)
+        dboutput = cur.fetchall()
+        for spalte in dboutput:
+            plfile.writerow(spalte)
+
+        print('Die Ergebnisse wurden in zwei CSV-Dateien Ausgegeben! Die Trennzeichen sind ";".')
+        con.close()
+
     def auswahl(self):
         con = sqli.connect('pwvwp.db')
         cur = con.cursor()
@@ -208,8 +233,9 @@ class Model(object):
 
 class View(Tk):
     def __init__(self, callback_imp, callback_exp, callback_bee, callback_j5, callback_j6, callback_j7, callback_j8,
-                 callback_j9,
-                 callback_j10, callback_j11, callback_j12, callback_ja, callback_hin, callback_aus):
+                 callback_j9, callback_j10, callback_j11, callback_j12, callback_ja, callback_hin, callback_aus,
+                 callback_ande, callback_a1, callback_a2, callback_a3, callback_a4, callback_a5, callback_a6,
+                 callback_a7):
         Tk.__init__(self)
         self.title("Projektwochenverwaltungsprogramm")
         self.geometry('750x300')
@@ -230,10 +256,21 @@ class View(Tk):
         self.callback_JA = callback_ja
         self.callback_aus = callback_aus
         self.callback_hin = callback_hin
+        self.callback_ande = callback_ande
+        self.callback_a1 = callback_a1
+        self.callback_a2 = callback_a2
+        self.callback_a3 = callback_a3
+        self.callback_a4 = callback_a4
+        self.callback_a5 = callback_a5
+        self.callback_a6 = callback_a6
+        self.callback_a7 = callback_a7
         self.labels = {}
         self.labelnames = ("Vorname", "Nachname", "Klasse", "Jahrg", "Erst Wunsch", "Zweit Wunsch", "Dritt Wunsch")
         self.entrys = {}
         self.buttons = {}
+        self.rahmen = {1: Frame(master=self), 2: Frame(master=self)}
+        self.rahmen.update({11: Frame(master=self.rahmen[1])})
+        self.fenster = {}
 
         self.ande_v = None
         self.ande_r1 = None
@@ -243,16 +280,12 @@ class View(Tk):
         self.ande_r5 = None
         self.ande_r6 = None
         self.ande_r7 = None
-        self.rahmen1 = Frame(master=self)
-        self.rahmen2 = Frame(master=self)
-        self.rahmen11 = Frame(master=self.rahmen1)
-        self.rahmen_ande = None
 
         # erstellen des Menüs
         self.menubar = Menu(self)
         self.filemenu = Menu(self.menubar, tearoff=0)
-        self.filemenu.add_command(label="Import", command=self.callback_imp)
-        self.filemenu.add_command(label="Export", command=self.callback_exp)
+        self.filemenu.add_command(label="importieren", command=self.callback_imp)
+        self.filemenu.add_command(label="exportieren", command=self.callback_exp)
         self.filemenu.add_separator()
         self.filemenu.add_command(label="Beenden", command=self.callback_bee)
         self.menubar.add_cascade(label="Datei", menu=self.filemenu)
@@ -266,9 +299,9 @@ class View(Tk):
         def myfunction(event):
             self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 
-        self.canvas = Canvas(self.rahmen2, width=1000)
+        self.canvas = Canvas(self.rahmen[2], width=1000)
         self.frame = Frame(self.canvas)
-        self.scrollbar = Scrollbar(self.rahmen2, orient="vertical", command=self.canvas.yview)
+        self.scrollbar = Scrollbar(self.rahmen[2], orient="vertical", command=self.canvas.yview)
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
 
         self.scrollbar.pack(side="right", fill="y")
@@ -276,86 +309,129 @@ class View(Tk):
         self.canvas.create_window((0, 0), window=self.frame, anchor='nw')
         self.frame.bind("<Configure>", myfunction)
 
-        self.rahmen1.pack()
-        self.rahmen2.pack(side=LEFT)
-        self.rahmen11.pack(side=LEFT, fill=X)
+        self.rahmen[1].pack()
+        self.rahmen[2].pack(side=LEFT)
+        self.rahmen[11].pack(side=LEFT, fill=X)
         # self.rahmen12.pack(sie=LEFT, fill=X)
 
         self.v = IntVar()
-        self.r1 = Radiobutton(self.rahmen11, text="5", variable=self.v, value=1, command=self.callback_J5).pack(
+        self.r1 = Radiobutton(self.rahmen[11], text="5", variable=self.v, value=1, command=self.callback_J5).pack(
             anchor=W, side=LEFT)
-        self.r2 = Radiobutton(self.rahmen11, text="6", variable=self.v, value=2, command=self.callback_J6).pack(
+        self.r2 = Radiobutton(self.rahmen[11], text="6", variable=self.v, value=2, command=self.callback_J6).pack(
             anchor=W, side=LEFT)
-        self.r3 = Radiobutton(self.rahmen11, text="7", variable=self.v, value=3, command=self.callback_J7).pack(
+        self.r3 = Radiobutton(self.rahmen[11], text="7", variable=self.v, value=3, command=self.callback_J7).pack(
             anchor=W, side=LEFT)
-        self.r4 = Radiobutton(self.rahmen11, text="8", variable=self.v, value=4, command=self.callback_J8).pack(
+        self.r4 = Radiobutton(self.rahmen[11], text="8", variable=self.v, value=4, command=self.callback_J8).pack(
             anchor=W, side=LEFT)
-        self.r5 = Radiobutton(self.rahmen11, text="9", variable=self.v, value=5, command=self.callback_J9).pack(
+        self.r5 = Radiobutton(self.rahmen[11], text="9", variable=self.v, value=5, command=self.callback_J9).pack(
             anchor=W, side=LEFT)
-        self.r6 = Radiobutton(self.rahmen11, text="10", variable=self.v, value=6, command=self.callback_J10).pack(
+        self.r6 = Radiobutton(self.rahmen[11], text="10", variable=self.v, value=6, command=self.callback_J10).pack(
             anchor=W, side=LEFT)
-        self.r7 = Radiobutton(self.rahmen11, text="11", variable=self.v, value=7, command=self.callback_J11).pack(
+        self.r7 = Radiobutton(self.rahmen[11], text="11", variable=self.v, value=7, command=self.callback_J11).pack(
             anchor=W, side=LEFT)
-        self.r8 = Radiobutton(self.rahmen11, text="12", variable=self.v, value=8, command=self.callback_J12).pack(
+        self.r8 = Radiobutton(self.rahmen[11], text="12", variable=self.v, value=8, command=self.callback_J12).pack(
             anchor=W, side=LEFT)
-        self.r9 = Radiobutton(self.rahmen11, text="Alle", variable=self.v, value=9, command=self.callback_JA).pack(
+        self.r9 = Radiobutton(self.rahmen[11], text="Alle", variable=self.v, value=9, command=self.callback_JA).pack(
             anchor=W, side=LEFT)
 
         self.zuord_but = Button(text="Zuordnen", command=self.callback_aus)
         self.zuord_but.place(x=10, y=260, width=600, height=30)
 
+    def popup_textentry(self, text, call_ok, call_cancel):
+        self.fenster.update({'popup': Tk()})
+        self.fenster['popup'].title('Aktion erforderlich!')
+        self.fenster['popup'].geometry("300x125")
+        self.fenster['popup'].resizable(0, 0)
+        self.labels.update({'popup': Label(self.fenster['popup'], text=text, font=('Arial', 13), wraplength=275)})
+        self.entrys.update({'popup': Entry(self.fenster['popup'])})
+        self.rahmen.update({'popup': Frame(self.fenster['popup'])})
+        self.buttons.update({'popup_OK': Button(self.rahmen['popup'], text='Ok', command=call_ok, width=10)})
+        self.buttons.update({'popup_Cancel': Button(self.rahmen['popup'], text='Cancel', command=call_cancel, width=10)})
+        self.labels['popup'].pack(fill=X)
+        self.entrys['popup'].pack(pady=15)
+        self.rahmen['popup'].pack()
+        self.buttons['popup_OK'].pack(side=LEFT)
+        self.buttons['popup_Cancel'].pack(side=LEFT)
+
     def schulerhin(self):
-        neu = Tk()
-        neu.title("Neue Schüler")
-        neu.geometry('780x110')
+        self.fenster.update({'hin': Tk()})
+        self.fenster['neu'].title("Neue Schüler")
+        self.fenster['neu'].geometry('780x110')
         for i in range(len(self.labelnames)):
-            self.labels.update({self.labelnames[i]: Label(neu, text=self.labelnames[i])})
+            self.labels.update({self.labelnames[i]: Label(self.fenster['neu'], text=self.labelnames[i])})
             self.labels[self.labelnames[i]].place(x=10 + (110 * i), y=10, width=100)
         for i in range(len(self.labelnames)):
-            self.entrys.update({i: Entry(neu)})
+            self.entrys.update({i: Entry(self.fenster['neu'])})
             self.entrys[i].place(x=10 + (110 * i), y=40, width=100)
-        self.buttons.update({'hin_B': Button(master=neu, text="Schüler hinzufügen", command=self.callback_hin)})
+        self.buttons.update({'hin_B': Button(self.fenster['neu'], text="Schüler hinzufügen", command=self.callback_hin)})
         self.buttons['hin_B'].place(x=330, y=70, width=120, height=30)
 
     def andern(self):
-        ande = Tk()
-        ande.title("Schüler ändern")
-        ande.geometry('600x110')
+        self.fenster.update({'ande': Tk()})
+        self.fenster['ande'].title("Schüler ändern")
+        self.fenster['ande'].geometry('600x110')
 
-        self.rahmen_ande = Frame(master=ande)
+        self.rahmen.update({'ande': Frame(self.fenster['ande'])})
         self.ande_v = IntVar()
-        self.ande_r1 = Radiobutton(self.rahmen15, text="Vorname", variable=self.ande_v, value=1,
+        self.ande_r1 = Radiobutton(self.rahmen['ande'], text="Vorname", variable=self.ande_v, value=1,
                                    command=self.callback_a1).pack(anchor=W, side=LEFT)
-        self.ande_r2 = Radiobutton(self.rahmen15, text="Nachname", variable=self.ande_v, value=2,
+        self.ande_r2 = Radiobutton(self.rahmen['ande'], text="Nachname", variable=self.ande_v, value=2,
                                    command=self.callback_a2).pack(anchor=W, side=LEFT)
-        self.ande_r3 = Radiobutton(self.rahmen15, text="Klasse", variable=self.ande_v, value=3,
+        self.ande_r3 = Radiobutton(self.rahmen['ande'], text="Klasse", variable=self.ande_v, value=3,
                                    command=self.callback_a3).pack(anchor=W, side=LEFT)
-        self.ande_r4 = Radiobutton(self.rahmen15, text="Jahrgang", variable=self.ande_v, value=4,
+        self.ande_r4 = Radiobutton(self.rahmen['ande'], text="Jahrgang", variable=self.ande_v, value=4,
                                    command=self.callback_a4).pack(anchor=W, side=LEFT)
-        self.ande_r5 = Radiobutton(self.rahmen15, text="Erst Wunsch", variable=self.ande_v, value=5,
+        self.ande_r5 = Radiobutton(self.rahmen['ande'], text="Erst Wunsch", variable=self.ande_v, value=5,
                                    command=self.callback_a5).pack(anchor=W, side=LEFT)
-        self.ande_r6 = Radiobutton(self.rahmen15, text="Zweit Wunsch", variable=self.ande_v, value=6,
+        self.ande_r6 = Radiobutton(self.rahmen['ande'], text="Zweit Wunsch", variable=self.ande_v, value=6,
                                    command=self.callback_a6).pack(anchor=W, side=LEFT)
-        self.ande_r7 = Radiobutton(self.rahmen15, text="Dritt Wunsch", variable=self.ande_v, value=7,
+        self.ande_r7 = Radiobutton(self.rahmen['ande'], text="Dritt Wunsch", variable=self.ande_v, value=7,
                                    command=self.callback_a7).pack(anchor=W, side=LEFT)
-        self.labels.update({'ande_Lab': Label(master=ande, text="sID")})
-        self.labels['andern_Lab'].place(x=10, y=20, width=30)
-        self.entrys.update({'ande_E1': Entry(master=ande)})
-        self.entrys['andern_E1'].place(x=10, y=40, width=30)
-        self.entrys.update({'ande_E2': Entry(master=ande)})
-        self.entrys['ande_E2'].place(x=50, y=40, width=540)
-        self.buttons.update({'ande_B': Button(master=ande, text="ändern", command=self.callback_andern)})
+
+        self.labels.update({'ande_Lab': Label(self.fenster['ande'], text="sID")})
+        self.labels['ande_Lab'].place(x=10, y=20, width=30)
+
+        self.entrys.update({'ande_Eaktuell': Entry(self.fenster['ande'])})
+        self.entrys['ande_Eaktuell'].place(x=10, y=40, width=30)
+        self.entrys.update({'ande_Eandern': Entry(self.fenster['ande'])})
+        self.entrys['ande_Eandern'].place(x=50, y=40, width=540)
+
+        self.buttons.update({'ande_B': Button(self.fenster['ande'], text="ändern", command=self.callback_ande)})
         self.buttons['ande_B'].place(x=10, y=70, width=580, height=30)
-        self.rahmen_ande.pack(side=LEFT, fill=X)
+
+        self.rahmen['ande'].pack(side=LEFT, fill=X)
 
 
 class Controller(object):
     def __init__(self):
         self.model = Model()
         self.view = View(self.importieren, self.exportieren, self.beenden, self.J5, self.J6, self.J7, self.J8, self.J9,
-                         self.J10, self.J11, self.J12, self.JA, self.hinzufugen, self.model.auswahl)
+                         self.J10, self.J11, self.J12, self.JA, self.hinzufugen, self.model.auswahl, self.ande, self.J5,
+                         self.J6, self.J7, self.J8, self.J9, self.J10, self.J11)
+        self.delimiter = None
+        self.slcsv = None
+        self.plcsv = None
+
         if os.path.exists('projektliste.csv') and os.path.exists('schuelerliste.csv'):
             self.model.importCSV('schuelerliste.csv', 'projektliste.csv')
+
+    def delimOK(self):
+        self.delimiter = self.view.txt_Ent.get()
+        if self.delimiter == '':
+            showwarning('Angabe ungültig', 'Das angegebene Trennzeichen ist ungültig oder es wurde keines Angegeben!'
+                                           '\nBitte Geben Sie ein anderes Trennzeichen ein!')
+            self.fenster_zerstören(self.view.popup)
+            self.delimiterFester()
+        else:
+            self.fenster_zerstören(self.view.popup)
+            self.model.importCSV(self.slcsv, self.plcsv, self.delimiter)
+            self.delimiter = None
+
+    def delimCanc(self):
+        self.fenster_zerstören(self.view.popup)
+
+    def delimiterFester(self):
+        self.view.popup_textentry('Bitte giben sie das Trennzeichen der CSV-Datei an:', self.delimOK, self.delimCanc)
 
     def importieren(self):
         slcsv = filedialog.askopenfilename(title="Schülerliste importieren",
@@ -365,14 +441,26 @@ class Controller(object):
         self.model.importCSV(slcsv, plcsv)
 
     def exportieren(self):
-        showwarning('Noch nicht ausgereift', 'Dieser Teil wurde noch nicht Programmiert')
+        slcsv = filedialog.asksaveasfile(mode='w', title='Schülerliste exportieren', defaultextension=".csv",
+                                         initialfile='schuelerl_fertig',
+                                         filetypes=(("CSV Datei", "*.csv"), ("Txt Datei", "*.txt"),
+                                                    ("all files", "*.*")))
+        if slcsv is not None:
+            plcsv = filedialog.asksaveasfile(mode='w', title='Projektliste exportieren', defaultextension=".csv",
+                                             initialfile='projektel_fertig',
+                                             filetypes=(("CSV Datei", "*.csv"), ("Txt Datei", "*.txt"),
+                                                        ("all files", "*.*")))
+            if plcsv is not None:
+                self.model.exportCSV(slcsv, plcsv)
+        else:
+            showinfo('Exportiert', "Die Tabellen wurden in zwei CSV-Dateien mit ';' als Trennzeichen ausgegeben!")
 
     def beenden(self):
         x = askokcancel(title='Beenden',
                         message='Möchtest du das Programm wirklich beenden?'
                                 '\nNicht abgeschlossene Aktionen könnten zu fehlern führen!')
         if x:
-            self.view.destroy()
+            self.fenster_zerstören(self.view)
 
     def tabelle(self, tabellen_name):
         x = self.model.ausgabe(tabellen_name)
@@ -410,6 +498,9 @@ class Controller(object):
         time.sleep(0.1)
         self.view.ro_botton.config(bg="white")
 
+    def ande(self):
+        showwarning('Noch nicht ausgereift', 'Dieser Teil wurde noch nicht Programmiert')
+
     def J5(self):
         showwarning('Noch nicht ausgereift', 'Dieser Teil wurde noch nicht Programmiert')
 
@@ -437,6 +528,8 @@ class Controller(object):
     def JA(self):
         showwarning('Noch nicht ausgereift', 'Dieser Teil wurde noch nicht Programmiert')
 
+    def fenster_zerstören(self, fenster):
+        fenster.destroy()
 
 c = Controller()
 c.view.mainloop()
