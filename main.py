@@ -107,6 +107,8 @@ class Model(object):
                 cur.execute(sql)
                 x = cur.fetchall()  # max Projektnummer
                 xx = x[0][0]
+                if xx== None:
+                    xx=0
                 while b <= xx:
                     liste = []
                     sql = "select max(sID) FROM schueler WHERE '" + str(jahrg) + "' like sJahrg and '" + str(
@@ -160,9 +162,6 @@ class Model(object):
                                 cur.execute(sql)
                                 m += 1
                     b = b + 1
-        sql = "select count(sID) from schueler WHERE 8 like sJahrg"
-        cur.execute(sql)
-        schuler = cur.fetchall()
         jahrg = 4  # Jahrgang
         while jahrg <= 11:
             jahrg += 1
