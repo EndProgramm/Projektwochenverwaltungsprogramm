@@ -385,14 +385,14 @@ class Controller(object):
                          self.J10, self.J11, self.J12, self.JA, self.hinzufugen, self.zuordnen, self.ande,
                          self.J6, self.J6, self.J7, self.J8, self.J9, self.J10, self.J11)
         self.delimiter = None
-        self.slcsv = None
-        self.plcsv = None
+        self.slcsv = 'schuelerliste.csv'
+        self.plcsv = 'projektliste.csv'
         self.tabelle()
 
         if os.path.exists('projektliste.csv') and os.path.exists('schuelerliste.csv') \
                 and not self.model.ausfuhren('SELECT * FROM schueler') \
                 and not self.model.ausfuhren('SELECT * FROM projekte'):
-            self.model.importCSV('schuelerliste.csv', 'projektliste.csv')
+            self.delimiterFester()
         self.view.table.bind('<<TreeviewSelect>>', self.treevent)
 
     def treevent(self, event):
@@ -400,21 +400,21 @@ class Controller(object):
 
     def zuordnen(self):
         self.model.zuordnen()
-        self.tabelle()
+        self.tabelle_update()
 
     def delimOK(self):
-        self.delimiter = self.view.txt_Ent.get()
+        self.delimiter = self.view.entrys['popup'].get()
         if self.delimiter == '':
             showwarning('Angabe ungültig', 'Das angegebene Trennzeichen ist ungültig oder es wurde keines Angegeben!'
                                            '\nBitte Geben Sie ein anderes Trennzeichen ein!')
-            self.fenster_zerstören(self.view.popup)
+            self.fenster_zerstören(self.view.fenster['popup'])
             self.delimiterFester()
         else:
-            self.fenster_zerstören(self.view.popup)
+            self.fenster_zerstören(self.view.fenster['popup'])
             self.model.importCSV(self.slcsv, self.plcsv, self.delimiter)
 
     def delimCanc(self):
-        self.fenster_zerstören(self.view.popup)
+        self.fenster_zerstören(self.view.fenster['popup'])
 
     def delimiterFester(self):
         self.view.popup_textentry('Bitte giben sie das Trennzeichen der CSV-Datei an:', self.delimOK, self.delimCanc)
@@ -427,7 +427,7 @@ class Controller(object):
                                                     filetypes=(("CSV Datei", "*.csv"), ("all files", "*.*")))
             if self.delimiter is None and bool(self.plcsv):
                 self.delimiterFester()
-        self.tabelle()
+        self.tabelle_update()
 
     def exportieren(self):
         slcsv = filedialog.asksaveasfile(mode='w', title='Schülerliste exportieren', defaultextension=".csv",
@@ -470,6 +470,13 @@ class Controller(object):
             self.view.table.insert('', t[0], t[0], values=t)
         self.view.scrollbar.config(command=self.view.table.yview)
         self.view.table.pack(fill=X)
+
+    def tabelle_update(self, fetch=None):
+        self.view.table.delete(*self.view.table.get_children())
+        if fetch is None:
+            fetch = self.model.ausgabe('schueler')
+        for t in fetch:
+            self.view.table.insert('', t[0], t[0], values=t)
 
     def tabelle_sorti(self, col, descending):
         data = [(self.view.table.set(tvindex, col), tvindex) for tvindex in self.view.table.get_children('')]
@@ -515,7 +522,7 @@ class Controller(object):
         self.view.update()
         time.sleep(0.1)
         self.view.ro_botton.config(bg="white")
-        self.tabelle()
+        self.tabelle_update()
 
     def ande(self):
         self.unreif()
@@ -546,7 +553,7 @@ class Controller(object):
         self.unreif()
 
     def JA(self):
-        self.tabelle()
+        self.tabelle_update()
 
     def fenster_zerstören(self, fenster):
         fenster.destroy()
