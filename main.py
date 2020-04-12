@@ -31,13 +31,13 @@ class Model(object):
         connection.commit()
         connection.close()
 
-    def importCSV(self, slcsv, plcsv, delimiter):  # sl = schuelerliste, pl = projektliste
+    def importCSV(self, slcsv, plcsv, delis, delip):  # sl = schuelerliste, pl = projektliste
         con = sqli.connect('pwvwp.db')
         cur = con.cursor()
 
         # importieren der slcsv Datei
         file = open(slcsv, 'r')
-        read = csv.reader(file, delimiter=delimiter)
+        read = csv.reader(file, delimiter=delis)
         for row in read:
             sql = "SELECT COUNT(*) FROM schueler WHERE sName = '" + row[0] + "' AND sVName = '" + row[
                 1] + "' AND sJahrg = '" + row[2] + "';"
@@ -53,7 +53,7 @@ class Model(object):
 
         # importieren der plcsv Datei
         file = open(plcsv, 'r')
-        read = csv.reader(file, delimiter=delimiter)
+        read = csv.reader(file, delimiter=delip)
         for row in read:
             sql = "SELECT COUNT(*) FROM projekte WHERE pName = '" + row[0] + "' AND pJahrg = '" + row[1] + "';"
             cur.execute(sql)
@@ -69,12 +69,12 @@ class Model(object):
         con.commit()
         con.close()
 
-    def exportCSV(self, slcsv, plcsv):
+    def exportCSV(self, slcsv, plcsv, delimiter):
         con = sqli.connect('pwvwp.db')
         cur = con.cursor()
 
         # auslesen der datenbankliste schueler in eine CSV-Datei
-        slfile = csv.writer(slcsv, delimiter=';', quoting=csv.QUOTE_NONE)
+        slfile = csv.writer(slcsv, delimiter=delimiter, quoting=csv.QUOTE_NONE)
         sql = "SELECT * FROM schueler;"
         cur.execute(sql)
         dboutput = cur.fetchall()
@@ -84,7 +84,7 @@ class Model(object):
             slfile.writerow(spalte)
 
         # auslesen der datenbankliste projekte in eine CSV-Datei
-        plfile = csv.writer(plcsv, delimiter=';', quoting=csv.QUOTE_NONE)
+        plfile = csv.writer(plcsv, delimiter=delimiter, quoting=csv.QUOTE_NONE)
         sql = "SELECT * FROM schueler;"
         cur.execute(sql)
         dboutput = cur.fetchall()
@@ -107,8 +107,8 @@ class Model(object):
                 cur.execute(sql)
                 x = cur.fetchall()  # max Projektnummer
                 xx = x[0][0]
-                if xx== None:
-                    xx=0
+                if xx is None:
+                    xx = 0
                 while b <= xx:
                     liste = []
                     sql = "select max(sID) FROM schueler WHERE '" + str(jahrg) + "' like sJahrg and '" + str(
@@ -384,7 +384,8 @@ class Controller(object):
         self.view = View(self.importieren, self.exportieren, self.beenden, self.J5, self.J6, self.J7, self.J8, self.J9,
                          self.J10, self.J11, self.J12, self.JA, self.hinzufugen, self.zuordnen, self.ande,
                          self.J6, self.J6, self.J7, self.J8, self.J9, self.J10, self.J11)
-        self.delimiter = None
+        self.delimiter = {'imp_s': None, 'imp_p': None, 'exp': None}
+        self.dchosen = None
         self.slcsv = 'schuelerliste.csv'
         self.plcsv = 'projektliste.csv'
         self.tabelle()
@@ -392,7 +393,7 @@ class Controller(object):
         if os.path.exists('projektliste.csv') and os.path.exists('schuelerliste.csv') \
                 and not self.model.ausfuhren('SELECT * FROM schueler') \
                 and not self.model.ausfuhren('SELECT * FROM projekte'):
-            self.delimiterFester()
+            self.importieren()
         self.view.table.bind('<<TreeviewSelect>>', self.treevent)
 
     def treevent(self, event):
@@ -403,31 +404,48 @@ class Controller(object):
         self.tabelle_update()
 
     def delimOK(self):
-        self.delimiter = self.view.entrys['popup'].get()
+        if isinstance(self.dchosen, tuple):
+            for d in self.dchosen:
+                self.delimiter[d] = self.view.entrys['popup'].get()
+        else:
+            self.delimiter[self.dchosen] = self.view.entrys['popup'].get()
         if self.delimiter == '':
             showwarning('Angabe ungültig', 'Das angegebene Trennzeichen ist ungültig oder es wurde keines Angegeben!'
                                            '\nBitte Geben Sie ein anderes Trennzeichen ein!')
             self.fenster_zerstören(self.view.fenster['popup'])
-            self.delimiterFester()
+            self.delimiterFester(None)
         else:
             self.fenster_zerstören(self.view.fenster['popup'])
-            self.model.importCSV(self.slcsv, self.plcsv, self.delimiter)
+            self.dchosen = None
 
     def delimCanc(self):
         self.fenster_zerstören(self.view.fenster['popup'])
 
-    def delimiterFester(self):
+    def delimiterFester(self, d):
+        if isinstance(d, tuple):
+            self.dchosen = list(self.delimiter.keys())[d[0]], list(self.delimiter.keys())[d[1]]
+        elif self.dchosen is None:
+            self.dchosen = list(self.delimiter.keys())[d]
         self.view.popup_textentry('Bitte giben sie das Trennzeichen der CSV-Datei an:', self.delimOK, self.delimCanc)
+        while self.dchosen is not None:
+            self.view.fenster['popup'].update()
+        return True
 
     def importieren(self):
-        self.slcsv = filedialog.askopenfilename(title="Schülerliste importieren",
-                                                filetypes=(("CSV Datei", "*.csv"), ("all files", "*.*")))
-        if bool(self.slcsv):  # keine Ausgabe von None bei askopenfile, deswegen als bool interpretieren (nichts=False)
-            self.plcsv = filedialog.askopenfilename(title="Projektliste importieren",
+        if not isinstance(self.slcsv, str):
+            self.slcsv = filedialog.askopenfilename(title="Schülerliste importieren",
                                                     filetypes=(("CSV Datei", "*.csv"), ("all files", "*.*")))
-            if self.delimiter is None and bool(self.plcsv):
-                self.delimiterFester()
-        self.tabelle_update()
+            if bool(self.slcsv):  # keine Ausgabe von None bei askopenfile, deswegen als bool interpretieren
+                # (nichts=False)
+                self.plcsv = filedialog.askopenfilename(title="Projektliste importieren",
+                                                        filetypes=(("CSV Datei", "*.csv"), ("all files", "*.*")))
+        if (self.delimiter['imp_s'], self.delimiter['imp_p']) == (None, None) and bool(self.plcsv):
+            if self.delimiterFester((0, 1)):
+                self.model.importCSV(self.slcsv, self.plcsv, self.delimiter['imp_s'], self.delimiter['imp_p'])
+        if not bool(self.view.table.get_children()):
+            self.tabelle()
+        else:
+            self.tabelle_update()
 
     def exportieren(self):
         slcsv = filedialog.asksaveasfile(mode='w', title='Schülerliste exportieren', defaultextension=".csv",
@@ -440,9 +458,10 @@ class Controller(object):
                                              filetypes=(("CSV Datei", "*.csv"), ("Txt Datei", "*.txt"),
                                                         ("all files", "*.*")))
             if plcsv is not None:
-                self.model.exportCSV(slcsv, plcsv)
+                if self.delimiterFester(2):
+                    self.model.exportCSV(slcsv, plcsv, self.delimiter['exp'])
         else:
-            showinfo('Exportiert', "Die Tabellen wurden in zwei CSV-Dateien mit '" + self.delimiter +
+            showinfo('Exportiert', "Die Tabellen wurden in zwei CSV-Dateien mit '" + self.delimiter['exp'] +
                      "' als Trennzeichen ausgegeben!")
 
     def beenden(self):
