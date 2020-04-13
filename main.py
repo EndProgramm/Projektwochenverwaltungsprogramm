@@ -189,6 +189,8 @@ class Model(object):
                             schuler[0][0]) + "'like sID ;"
                         cur.execute(sql)
                         schuler.pop(0)
+            if len(schuler)!=0 and len(projekte)==0:
+                showwarning('Fehler','Im '+str(jahrg)+'. Jahrgang gibt es mehr Schüler als Plätze in den Kursen.')
         con.commit()
         con.close()
 
@@ -340,6 +342,10 @@ class View(Tk):
         self.buttons['hin_B'].place(x=330, y=70, width=120, height=30)
 
     def schuelerandern(self):
+        try:
+            self.fenster['ande'].destroy()
+        except:
+            pass
         self.fenster.update({'ande': Tk()})
         self.fenster['ande'].title("Schüler ändern")
         self.fenster['ande'].geometry('725x110')
@@ -389,6 +395,7 @@ class Controller(object):
         self.plcsv = 'projektliste.csv'
         self.andernx=""
         self.tabelle()
+        self.a=""
 
         if os.path.exists('projektliste.csv') and os.path.exists('schuelerliste.csv') \
                 and not self.model.ausfuhren('SELECT * FROM schueler') \
@@ -397,7 +404,11 @@ class Controller(object):
         self.view.table.bind('<<TreeviewSelect>>', self.treevent)
 
     def treevent(self, event):
-        print(self.view.table.set(int(event.widget.selection()[0])))
+        if event.widget.selection()[0]==self.a:
+            self.view.schuelerandern()
+            self.view.entrys['ande_Eid'].insert(0, event.widget.selection()[0])
+        self.a=event.widget.selection()[0]
+        
 
     def zuordnen(self):
         self.model.zuordnen()
@@ -514,8 +525,6 @@ class Controller(object):
         self.view.table.heading(col, command=lambda: self.tabelle_sorti(col, not descending))
 
     def hinzufugen(self):
-        #for entry in self.view.entrys:
-            #self.view.entrys[entry].config(bg='white')
         erst = self.view.entrys[4].get()
         zweit = self.view.entrys[5].get()
         dritt = self.view.entrys[6].get()
@@ -530,17 +539,18 @@ class Controller(object):
             self.model.einfuegen('schueler', ('sName', 'sVName', 'sJahrg', 'sKla', 'sErst', 'sZweit', 'sDritt'),
                                  (self.view.entrys[1].get(), self.view.entrys[0].get(),
                                   self.view.entrys[2].get(), self.view.entrys[3].get(), erst, zweit, dritt))
-            #self.view.ro_botton.config(bg="green")
+            self.view.buttons['hin_B'].config(bg="green")
             for i in range(4):
                 self.view.entrys[i].delete(0, END)
+                self.view.entrys[i].config(bg='white')
         else:
-            #self.view.ro_botton.config(bg="red")
+            self.view.buttons['hin_B'].config(bg="red")
             for i in range(4):
+                self.view.entrys[i].config(bg='white')
                 if self.view.entrys[i].get() == "":
                     self.view.entrys[i].config(bg='red')
         self.view.update()
         time.sleep(0.1)
-        #self.view.ro_botton.config(bg="white")
         self.tabelle_update()
 
     def ande(self):
@@ -552,6 +562,7 @@ class Controller(object):
             connection.commit()
             connection.close()
             self.tabelle_update()
+            self.view.fenster['ande'].destroy()
 
     def J5(self):
         self.tabelle_update(self.model.jahrgsuch(5))
@@ -578,16 +589,16 @@ class Controller(object):
         self.tabelle_update(self.model.jahrgsuch(12))
 
     def a1(self):
-        self.andernx="sVName"
-
-    def a2(self):
         self.andernx="sName"
 
+    def a2(self):
+        self.andernx="sVName"
+
     def a3(self):
-        self.andernx="sKla"
+        self.andernx="sJahrg"
 
     def a4(self):
-        self.andernx="sJahrg"
+        self.andernx="sKla"
 
     def a5(self):
         self.andernx="sErst"
