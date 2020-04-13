@@ -189,6 +189,8 @@ class Model(object):
                             schuler[0][0]) + "'like sID ;"
                         cur.execute(sql)
                         schuler.pop(0)
+            if len(schuler)!=0 and len(projekte)==0:
+                showwarning('Fehler','Im '+str(jahrg)+'. Jahrgang gibt es mehr Schüler als Plätze in den Kursen.')
         con.commit()
         con.close()
 
@@ -266,7 +268,7 @@ class View(Tk):
         self.callback_zord = zord
         self.callback_hin = hin
         self.callback_ande = ande
-        self.names = {'schueler': ("Vorname", "Nachname", "Klasse", "Jahrg", "Erst Wunsch", "Zweit Wunsch",
+        self.names = {'schueler': ("Nachname", "Vorname", "Jahrg", "Klasse", "Erst Wunsch", "Zweit Wunsch",
                                    "Dritt Wunsch"),
                       'jahrg': ('5', '6', '7', '8', '9', '10', '11', '12', 'Alle')}
         self.labels = {}
@@ -340,6 +342,10 @@ class View(Tk):
         self.buttons['hin'].place(x=330, y=70, width=120, height=30)
 
     def schuelerandern(self):
+        try:
+            self.fenster['ande'].destroy()
+        except:
+            pass
         self.fenster.update({'ande': Tk()})
         self.fenster['ande'].title("Schüler ändern")
         self.fenster['ande'].geometry('725x110')
@@ -389,6 +395,7 @@ class Controller(object):
         self.plcsv = 'projektliste.csv'
         self.andernx=""
         self.tabelle()
+        self.a=""
 
         if os.path.exists('projektliste.csv') and os.path.exists('schuelerliste.csv') \
                 and not self.model.ausfuhren('SELECT * FROM schueler') \
@@ -397,7 +404,11 @@ class Controller(object):
         self.view.table.bind('<<TreeviewSelect>>', self.treevent)
 
     def treevent(self, event):
-        print(self.view.table.set(int(event.widget.selection()[0])))
+        if event.widget.selection()[0]==self.a:
+            self.view.schuelerandern()
+            self.view.entrys['ande_Eid'].insert(0, event.widget.selection()[0])
+        self.a=event.widget.selection()[0]
+
 
     def zuordnen(self):
         self.model.zuordnen()
@@ -533,9 +544,14 @@ class Controller(object):
             self.view.buttons['hin'].config(bg="green")
             for entry in self.view.entrys:
                 entry.delete(0, 'end')
+            self.view.buttons['hin_B'].config(bg="green")
+            for i in range(4):
+                self.view.entrys[i].delete(0, END)
+                self.view.entrys[i].config(bg='white')
         else:
             self.view.buttons['hin'].config(bg="red")
             for i in range(4):
+                self.view.entrys[i].config(bg='white')
                 if self.view.entrys[i].get() == "":
                     self.view.entrys[i].config(bg='red')
         self.view.update()
@@ -547,11 +563,12 @@ class Controller(object):
         if self.andernx!="" and self.view.entrys['ande_Eid'].get()!="":
             connection = sqli.connect('pwvwp.db')
             cursor = connection.cursor()
-            sql="update schueler set "+self.andernx+"='"+str(self.view.entrys['ande_Eandern'].get())+"' where sID like '"+str(self.view.entrys['ande_Eid'].get())+"'"
+            sql="update schueler set "+self.andernx+"='"+str(self.view.entrys['ande_Eandern'].get())+"' where sID like '"+str(self.view.entrys['ande_Eid'].get())+"'"        
             cursor.execute(sql)
             connection.commit()
             connection.close()
             self.tabelle_update()
+            self.view.fenster['ande'].destroy()
 
     def J5(self):
         self.tabelle_update(self.model.jahrgsuch(5))
@@ -584,10 +601,10 @@ class Controller(object):
         self.andernx="sName"
 
     def a3(self):
-        self.andernx="sKla"
+        self.andernx="sJahrg"
 
     def a4(self):
-        self.andernx="sJahrg"
+        self.andernx="sKla"
 
     def a5(self):
         self.andernx="sErst"
