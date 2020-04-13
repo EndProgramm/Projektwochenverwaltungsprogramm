@@ -269,7 +269,7 @@ class View(Tk):
         self.callback_zord = zord
         self.callback_hin = hin
         self.callback_ande = ande
-        self.names = {'schueler': ("Vorname", "Nachname", "Jahrg", "Klasse", "Erst Wunsch", "Zweit Wunsch",
+        self.names = {'schueler': ("Nachname", "Vorname", "Jahrg", "Klasse", "Erst Wunsch", "Zweit Wunsch",
                                    "Dritt Wunsch"),
                       'jahrg': ('5', '6', '7', '8', '9', '10', '11', '12', 'Alle')}
         self.labels = {}
@@ -396,7 +396,7 @@ class Controller(object):
         self.plcsv = 'projektliste.csv'
         self.andernx = ""
         self.tabelle()
-        self.a = ""
+        
 
         if os.path.exists('projektliste.csv') and os.path.exists('schuelerliste.csv') \
                 and not self.model.ausfuhren('SELECT * FROM schueler') \
@@ -406,7 +406,6 @@ class Controller(object):
 
     def treevent(self, event):
         if self.view.table.identify_region(event.x, event.y) == 'cell':
-            self.a = event.widget.selection()[0]
             self.view.schuelerandern()
             self.view.entrys['ande_Eid'].insert(0, event.widget.selection()[0])
 
@@ -423,15 +422,14 @@ class Controller(object):
         if self.delimiter == '':
             showwarning('Angabe ungültig', 'Das angegebene Trennzeichen ist ungültig oder es wurde keines Angegeben!'
                                            '\nBitte Geben Sie ein anderes Trennzeichen ein!')
-            self.fenster_zerstören(self.view.fenster['popup'])
+            self.view.fenster['popup'].destroy()
             self.delimiterFester(None)
         else:
-            self.fenster_zerstören(self.view.fenster['popup'])
+            self.view.fenster['popup'].destroy()
             self.dchosen = None
 
     def delimCanc(self):
-        self.fenster_zerstören(self.view.fenster['popup'])
-
+        self.view.fenster['popup'].destroy()
     def delimiterFester(self, d):
         if isinstance(d, tuple):
             self.dchosen = list(self.delimiter.keys())[d[0]], list(self.delimiter.keys())[d[1]]
@@ -480,7 +478,7 @@ class Controller(object):
                         message='Möchtest du das Programm wirklich beenden?'
                                 '\nNicht abgeschlossene Aktionen könnten zu fehlern führen!')
         if x:
-            self.fenster_zerstören(self.view)
+            self.view.destroy()
 
     def tabelle(self, fetch=None):
         if fetch is None:
@@ -555,7 +553,7 @@ class Controller(object):
                 if self.view.entrys[i].get() == "":
                     self.view.entrys[i].config(bg='red')
         self.view.update()
-        time.sleep(0.1)
+        time.sleep(1)
         self.view.buttons['hin'].config(bg="white")
         self.tabelle_update()
 
@@ -617,9 +615,6 @@ class Controller(object):
 
     def a7(self):
         self.andernx = "sDritt"
-
-    def fenster_zerstören(self, fenster):
-        fenster.destroy()
 
     def unreif(self):
         showwarning('Noch nicht ausgereift', 'Dieser Teil wurde noch nicht Programmiert')
