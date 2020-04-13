@@ -337,8 +337,8 @@ class View(Tk):
         for i in range(len(self.names['schueler'])):
             self.entrys[i] = Entry(self.fenster['hin'])
             self.entrys[i].place(x=10 + (110 * i), y=40, width=100)
-        self.buttons['hin_B'] = Button(self.fenster['hin'], text="Schüler hinzufügen", command=self.callback_hin)
-        self.buttons['hin_B'].place(x=330, y=70, width=120, height=30)
+        self.buttons['hin'] = Button(self.fenster['hin'], text="Schüler hinzufügen", command=self.callback_hin)
+        self.buttons['hin'].place(x=330, y=70, width=120, height=30)
 
     def schuelerandern(self):
         self.fenster.update({'ande': Tk()})
@@ -457,6 +457,7 @@ class Controller(object):
                                              initialfile='projektel_fertig',
                                              filetypes=(("CSV Datei", "*.csv"), ("Txt Datei", "*.txt"),
                                                         ("all files", "*.*")))
+
             if plcsv is not None:
                 if self.delimiterFester(2):
                     self.model.exportCSV(slcsv, plcsv, self.delimiter['exp'])
@@ -530,17 +531,17 @@ class Controller(object):
             self.model.einfuegen('schueler', ('sName', 'sVName', 'sJahrg', 'sKla', 'sErst', 'sZweit', 'sDritt'),
                                  (self.view.entrys[1].get(), self.view.entrys[0].get(),
                                   self.view.entrys[2].get(), self.view.entrys[3].get(), erst, zweit, dritt))
-            self.view.ro_botton.config(bg="green")
+            self.view.buttons['hin'].config(bg="green")
             for entry in self.view.entrys:
                 entry.delete(0, 'end')
         else:
-            self.view.ro_botton.config(bg="red")
+            self.view.buttons['hin'].config(bg="red")
             for i in range(4):
                 if self.view.entrys[i].get() == "":
                     self.view.entrys[i].config(bg='red')
         self.view.update()
         time.sleep(0.1)
-        self.view.ro_botton.config(bg="white")
+        self.view.buttons['hin'].config(bg="white")
         self.tabelle_update()
 
     def ande(self):
