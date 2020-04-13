@@ -112,7 +112,7 @@ class Model(object):
                 while b <= xx:
                     liste = []
                     sql = "select max(sID) FROM schueler WHERE '" + str(jahrg) + "' like sJahrg and '" + str(
-                        b) + "' like " + wahl + ";"  # max sID wird ermittelt
+                        b) + "' like " + wahl + " and sZu is NULL;"  # max sID wird ermittelt
                     cur.execute(sql)
                     zz = cur.fetchall()
                     z = 0
@@ -207,7 +207,6 @@ class Model(object):
                 sql += value_tuple[i] + "');"
             else:
                 sql += value_tuple[i] + "', '"
-        print(sql)
         cur.execute(sql)
         con.commit()
         con.close()
@@ -227,8 +226,8 @@ class Model(object):
         con = sqli.connect('pwvwp.db')
         cur = con.cursor()
 
-        sql = "SELECT sID, sName, sVName, sKla, sErst, sZweit, sDritt, sZu FROM schueler WHERE sJahrg LIKE '" + str(
-            jahrgang) + "' ORDER BY sVName ASC"
+        sql = "SELECT * FROM schueler WHERE sJahrg LIKE '" + str(
+            jahrgang) + "'"
         cur.execute(sql)
         erg = cur.fetchall()
 
@@ -267,7 +266,7 @@ class View(Tk):
         self.callback_zord = zord
         self.callback_hin = hin
         self.callback_ande = ande
-        self.names = {'schueler': ("Vorname", "Nachname", "Klasse", "Jahrg", "Erst Wunsch", "Zweit Wunsch",
+        self.names = {'schueler': ("Nachname", "Vorname", "Jahrg", "Klasse", "Erst Wunsch", "Zweit Wunsch",
                                    "Dritt Wunsch"),
                       'jahrg': ('5', '6', '7', '8', '9', '10', '11', '12', 'Alle')}
         self.labels = {}
@@ -382,12 +381,13 @@ class Controller(object):
     def __init__(self):
         self.model = Model()
         self.view = View(self.importieren, self.exportieren, self.beenden, self.J5, self.J6, self.J7, self.J8, self.J9,
-                         self.J10, self.J11, self.J12, self.JA, self.hinzufugen, self.zuordnen, self.ande,
-                         self.J6, self.J6, self.J7, self.J8, self.J9, self.J10, self.J11)
+                         self.J10, self.J11, self.J12, self.tabelle_update, self.hinzufugen, self.zuordnen, self.ande,
+                         self.a1, self.a2, self.a3, self.a4, self.a5, self.a6, self.a7)
         self.delimiter = {'imp_s': None, 'imp_p': None, 'exp': None}
         self.dchosen = None
         self.slcsv = 'schuelerliste.csv'
         self.plcsv = 'projektliste.csv'
+        self.andernx=""
         self.tabelle()
 
         if os.path.exists('projektliste.csv') and os.path.exists('schuelerliste.csv') \
@@ -514,8 +514,8 @@ class Controller(object):
         self.view.table.heading(col, command=lambda: self.tabelle_sorti(col, not descending))
 
     def hinzufugen(self):
-        for entry in self.view.entrys:
-            self.view.entrys[entry].config(bg='white')
+        #for entry in self.view.entrys:
+            #self.view.entrys[entry].config(bg='white')
         erst = self.view.entrys[4].get()
         zweit = self.view.entrys[5].get()
         dritt = self.view.entrys[6].get()
@@ -530,49 +530,73 @@ class Controller(object):
             self.model.einfuegen('schueler', ('sName', 'sVName', 'sJahrg', 'sKla', 'sErst', 'sZweit', 'sDritt'),
                                  (self.view.entrys[1].get(), self.view.entrys[0].get(),
                                   self.view.entrys[2].get(), self.view.entrys[3].get(), erst, zweit, dritt))
-            self.view.ro_botton.config(bg="green")
-            for entry in self.view.entrys:
-                entry.delete(0, 'end')
+            #self.view.ro_botton.config(bg="green")
+            for i in range(4):
+                self.view.entrys[i].delete(0, END)
         else:
-            self.view.ro_botton.config(bg="red")
+            #self.view.ro_botton.config(bg="red")
             for i in range(4):
                 if self.view.entrys[i].get() == "":
                     self.view.entrys[i].config(bg='red')
         self.view.update()
         time.sleep(0.1)
-        self.view.ro_botton.config(bg="white")
+        #self.view.ro_botton.config(bg="white")
         self.tabelle_update()
 
     def ande(self):
-        self.unreif()
+        if self.andernx!="" and self.view.entrys['ande_Eid'].get()!="":
+            connection = sqli.connect('pwvwp.db')
+            cursor = connection.cursor()
+            sql="update schueler set "+self.andernx+"='"+str(self.view.entrys['ande_Eandern'].get())+"' where sID like '"+str(self.view.entrys['ande_Eid'].get())+"'"        
+            cursor.execute(sql)
+            connection.commit()
+            connection.close()
+            self.tabelle_update()
 
     def J5(self):
-        tab = self.model.jahrgsuch(5)
-        self.tabelle(fetch=tab)
+        self.tabelle_update(self.model.jahrgsuch(5))
 
     def J6(self):
-        self.unreif()
+        self.tabelle_update(self.model.jahrgsuch(6))
 
     def J7(self):
-        self.unreif()
+        self.tabelle_update(self.model.jahrgsuch(7))
 
     def J8(self):
-        self.unreif()
+        self.tabelle_update(self.model.jahrgsuch(8))
 
     def J9(self):
-        self.unreif()
+        self.tabelle_update(self.model.jahrgsuch(9))
 
     def J10(self):
-        self.unreif()
+        self.tabelle_update(self.model.jahrgsuch(10))
 
     def J11(self):
-        self.unreif()
+        self.tabelle_update(self.model.jahrgsuch(11))
 
     def J12(self):
-        self.unreif()
+        self.tabelle_update(self.model.jahrgsuch(12))
 
-    def JA(self):
-        self.tabelle_update()
+    def a1(self):
+        self.andernx="sVName"
+
+    def a2(self):
+        self.andernx="sName"
+
+    def a3(self):
+        self.andernx="sKla"
+
+    def a4(self):
+        self.andernx="sJahrg"
+
+    def a5(self):
+        self.andernx="sErst"
+
+    def a6(self):
+        self.andernx="sZweit"
+
+    def a7(self):
+        self.andernx="sDritt"
 
     def fenster_zerstören(self, fenster):
         fenster.destroy()
