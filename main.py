@@ -24,7 +24,8 @@ class Model(object):
         sql = "CREATE TABLE projekte(pID INTEGER PRIMARY KEY, pName TEXT, pJahrg INTEGER, pNum INTEGER, pMaxS INTEGER)"
         cursor.execute(sql)
 
-        sql = "CREATE TABLE schueler(sID INTEGER PRIMARY KEY, sVName TEXT, sName TEXT, sJahrg INTEGER, sKla INTEGER, sErst INTEGER, sZweit INTEGER, sDritt INTEGER, sZu INTEGER);"
+        sql = "CREATE TABLE schueler(sID INTEGER PRIMARY KEY, sVName TEXT, sName TEXT, sJahrg INTEGER, sKla INTEGER, " \
+              "sErst INTEGER, sZweit INTEGER, sDritt INTEGER, sZu INTEGER); "
         cursor.execute(sql)
 
         print('Datenbank pwvwp.db mit Tabellen mitarbeiter und projekte angelegt.')
@@ -189,8 +190,8 @@ class Model(object):
                             schuler[0][0]) + "'like sID ;"
                         cur.execute(sql)
                         schuler.pop(0)
-            if len(schuler)!=0 and len(projekte)==0:
-                showwarning('Fehler','Im '+str(jahrg)+'. Jahrgang gibt es mehr Schüler als Plätze in den Kursen.')
+            if len(schuler) != 0 and len(projekte) == 0:
+                showwarning('Fehler', 'Im ' + str(jahrg) + '. Jahrgang gibt es mehr Schüler als Plätze in den Kursen.')
         con.commit()
         con.close()
 
@@ -268,7 +269,7 @@ class View(Tk):
         self.callback_zord = zord
         self.callback_hin = hin
         self.callback_ande = ande
-        self.names = {'schueler': ("Nachname", "Vorname", "Jahrg", "Klasse", "Erst Wunsch", "Zweit Wunsch",
+        self.names = {'schueler': ("Vorname", "Nachname", "Jahrg", "Klasse", "Erst Wunsch", "Zweit Wunsch",
                                    "Dritt Wunsch"),
                       'jahrg': ('5', '6', '7', '8', '9', '10', '11', '12', 'Alle')}
         self.labels = {}
@@ -353,7 +354,7 @@ class View(Tk):
         self.rahmen['ande'] = Frame(self.fenster['ande'])
 
         self.rahmen['ande_ID'] = Frame(self.rahmen['ande'])
-        self.labels['ande_idLab'] = Label(self.rahmen['ande_ID'], text="sID")
+        self.labels['ande_idLab'] = Label(self.rahmen['ande_ID'], text="ID")
         self.labels['ande_idLab'].pack(fill=X, pady=2)
         self.entrys['ande_Eid'] = Entry(self.rahmen['ande_ID'])
         self.entrys['ande_Eid'].pack(side=LEFT)
@@ -393,22 +394,21 @@ class Controller(object):
         self.dchosen = None
         self.slcsv = 'schuelerliste.csv'
         self.plcsv = 'projektliste.csv'
-        self.andernx=""
+        self.andernx = ""
         self.tabelle()
-        self.a=""
+        self.a = ""
 
         if os.path.exists('projektliste.csv') and os.path.exists('schuelerliste.csv') \
                 and not self.model.ausfuhren('SELECT * FROM schueler') \
                 and not self.model.ausfuhren('SELECT * FROM projekte'):
             self.importieren()
-        self.view.table.bind('<<TreeviewSelect>>', self.treevent)
+        self.view.table.bind('<Double-Button-1>', self.treevent)
 
     def treevent(self, event):
-        if event.widget.selection()[0]==self.a:
+        if self.view.table.identify_region(event.x, event.y) == 'cell':
+            self.a = event.widget.selection()[0]
             self.view.schuelerandern()
             self.view.entrys['ande_Eid'].insert(0, event.widget.selection()[0])
-        self.a=event.widget.selection()[0]
-
 
     def zuordnen(self):
         self.model.zuordnen()
@@ -542,12 +542,12 @@ class Controller(object):
                                  (self.view.entrys[1].get(), self.view.entrys[0].get(),
                                   self.view.entrys[2].get(), self.view.entrys[3].get(), erst, zweit, dritt))
             self.view.buttons['hin'].config(bg="green")
-            for entry in self.view.entrys:
-                entry.delete(0, 'end')
-            self.view.buttons['hin_B'].config(bg="green")
-            for i in range(4):
-                self.view.entrys[i].delete(0, END)
-                self.view.entrys[i].config(bg='white')
+            for entry in range(4):
+                self.view.entrys[entry].delete(0, END)
+            self.view.buttons['hin'].config(bg="green")
+            for entry in range(4):
+                self.view.entrys[entry].delete(0, END)
+                self.view.entrys[entry].config(bg='white')
         else:
             self.view.buttons['hin'].config(bg="red")
             for i in range(4):
@@ -560,10 +560,13 @@ class Controller(object):
         self.tabelle_update()
 
     def ande(self):
-        if self.andernx!="" and self.view.entrys['ande_Eid'].get()!="":
+        if self.andernx != "" and self.view.entrys['ande_Eid'].get() != "":
             connection = sqli.connect('pwvwp.db')
             cursor = connection.cursor()
-            sql="update schueler set "+self.andernx+"='"+str(self.view.entrys['ande_Eandern'].get())+"' where sID like '"+str(self.view.entrys['ande_Eid'].get())+"'"        
+            sql = "update schueler set " + self.andernx + "='" + str(
+                self.view.entrys['ande_Eandern'].get()) + "' where sID " \
+                                                          "like '" + str(
+                self.view.entrys['ande_Eid'].get()) + "';"
             cursor.execute(sql)
             connection.commit()
             connection.close()
@@ -595,25 +598,25 @@ class Controller(object):
         self.tabelle_update(self.model.jahrgsuch(12))
 
     def a1(self):
-        self.andernx="sVName"
+        self.andernx = "sVName"
 
     def a2(self):
-        self.andernx="sName"
+        self.andernx = "sName"
 
     def a3(self):
-        self.andernx="sJahrg"
+        self.andernx = "sJahrg"
 
     def a4(self):
-        self.andernx="sKla"
+        self.andernx = "sKla"
 
     def a5(self):
-        self.andernx="sErst"
+        self.andernx = "sErst"
 
     def a6(self):
-        self.andernx="sZweit"
+        self.andernx = "sZweit"
 
     def a7(self):
-        self.andernx="sDritt"
+        self.andernx = "sDritt"
 
     def fenster_zerstören(self, fenster):
         fenster.destroy()
