@@ -198,19 +198,30 @@ class Model(object):
     def einfuegen(self, tabelle, spalten_namen_tuple, value_tuple):
         con = sqli.connect('pwvwp.db')
         cur = con.cursor()
-        sql = "INSERT INTO " + tabelle + "("
-        for i in range(len(spalten_namen_tuple)):
-            if i == len(spalten_namen_tuple) - 1:
-                sql += spalten_namen_tuple[i] + ")"
+        sql = "SELECT count(*) FROM " + tabelle + " WHERE "
+        for i, e in enumerate(value_tuple):
+            if i < len(value_tuple) - 1:
+                sql += spalten_namen_tuple[i] + " = '" + e + "' AND "
             else:
-                sql += spalten_namen_tuple[i] + ", "
-        sql += " VALUES('"
-        for i in range(len(value_tuple)):
-            if i == len(value_tuple) - 1:
-                sql += value_tuple[i] + "');"
-            else:
-                sql += value_tuple[i] + "', '"
+                sql += spalten_namen_tuple[i] + " = '" + e + "';"
         cur.execute(sql)
+        erg = cur.fetchall()
+        if not erg[0][0]:
+            sql = "INSERT INTO " + tabelle + "("
+            for i in range(len(spalten_namen_tuple)):
+                if i == len(spalten_namen_tuple) - 1:
+                    sql += spalten_namen_tuple[i] + ")"
+                else:
+                    sql += spalten_namen_tuple[i] + ", "
+            sql += " VALUES('"
+            for i in range(len(value_tuple)):
+                if i == len(value_tuple) - 1:
+                    sql += value_tuple[i] + "');"
+                else:
+                    sql += value_tuple[i] + "', '"
+            cur.execute(sql)
+        else:
+            showerror('Fehler', 'Schüler bereits vorhanden!')
         con.commit()
         con.close()
 
@@ -300,6 +311,7 @@ class View(Tk):
                                                                          variable=self.vars['jahrg'], value=i,
                                                                          command=self.radiocom['jahrg'][i])
             self.radios['jahrg-' + self.names['jahrg'][i]].pack(side=LEFT)
+        self.radios['jahrg-Alle'].select()
 
         # Tabelle
         self.scrollbar = Scrollbar(self.rahmen[2], orient="vertical")
@@ -345,7 +357,7 @@ class View(Tk):
     def schuelerandern(self):
         try:
             self.fenster['ande'].destroy()
-        except:
+        except TclError:
             pass
         self.fenster.update({'ande': Tk()})
         self.fenster['ande'].title("Schüler ändern")
@@ -397,12 +409,12 @@ class Controller(object):
         self.andernx = ""
         self.tabelle()
         self.a = ""
+        self.view.table.bind('<Double-Button-1>', self.treevent)
 
         if os.path.exists('projektliste.csv') and os.path.exists('schuelerliste.csv') \
                 and not self.model.ausfuhren('SELECT * FROM schueler') \
                 and not self.model.ausfuhren('SELECT * FROM projekte'):
             self.importieren()
-        self.view.table.bind('<Double-Button-1>', self.treevent)
 
     def treevent(self, event):
         if self.view.table.identify_region(event.x, event.y) == 'cell':
