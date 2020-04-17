@@ -446,7 +446,7 @@ class Controller(object):
             self.dchosen = list(self.delimiter.keys())[d[0]], list(self.delimiter.keys())[d[1]]
         elif self.dchosen is None:
             self.dchosen = list(self.delimiter.keys())[d]
-        self.view.popup_textentry('Bitte giben sie das Trennzeichen der CSV-Datei an:', self.delimOK, self.delimCanc)
+        self.view.popup_textentry('Bitte giben Sie das Trennzeichen der CSV-Datei an:', self.delimOK, self.delimCanc)
         while self.dchosen is not None:
             self.view.fenster['popup'].update()
         return True
