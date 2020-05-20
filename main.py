@@ -7,12 +7,11 @@ import sqlite3 as sqli
 from tkinter import *
 from tkinter import filedialog  # muss aus unbekannten Gründen extra importiert werden
 from tkinter.messagebox import *
-from tkinter.ttk import Treeview
+from tkinter.ttk import Treeview, Progressbar
 
 
 class Model(object):
     def __init__(self):
-        self.wahlen = ('sErst', 'sZweit', 'sDritt')
         if not os.path.exists('pwvwp.db'):
             self.dbAnlegen()
 
@@ -95,74 +94,80 @@ class Model(object):
         print('Die Ergebnisse wurden in zwei CSV-Dateien Ausgegeben! Die Trennzeichen sind ";".')
         con.close()
 
-    def zuordnen(self):
+    def zuordnen(self, wahl):
         con = sqli.connect('pwvwp.db')
         cur = con.cursor()
-        for wahl in self.wahlen:
-            jahrg = 4  # Jahrgang
-            while jahrg <= 11:
-                jahrg += 1
-                b = 1  # Projekt
-                sql = "select max(pNum) FROM projekte WHERE '" + str(
-                    jahrg) + "' like pJahrg;"  # max Projektnummer wird ermittelt
+        jahrg = 4  # Jahrgang
+        while jahrg <= 11:
+            jahrg += 1
+            b = 1  # Projekt
+            sql = "select max(pNum) FROM projekte WHERE '" + str(
+                jahrg) + "' like pJahrg;"  # max Projektnummer wird ermittelt
+            cur.execute(sql)
+            x = cur.fetchall()  # max Projektnummer
+            xx = x[0][0]
+            if xx is None:
+                xx = 0
+            while b <= xx:
+                liste = []
+                sql = "select max(sID) FROM schueler WHERE '" + str(jahrg) + "' like sJahrg and '" + str(
+                    b) + "' like " + wahl + " and sZu is NULL;"  # max sID wird ermittelt
                 cur.execute(sql)
-                x = cur.fetchall()  # max Projektnummer
-                xx = x[0][0]
-                if xx is None:
-                    xx = 0
-                while b <= xx:
-                    liste = []
-                    sql = "select max(sID) FROM schueler WHERE '" + str(jahrg) + "' like sJahrg and '" + str(
-                        b) + "' like " + wahl + " and sZu is NULL;"  # max sID wird ermittelt
+                zz = cur.fetchall()
+                z = 0
+                if zz[0][0]:
+                    z = zz[0][0]
+                y = 0  # zaehler sID
+                while y <= z:
+                    sql = "select sID FROM schueler WHERE '" + str(
+                        jahrg) + "' like sJahrg and sZu is NULL and '" + str(
+                        b) + "' like " + wahl + " and '" + str(
+                        y) + "' like sID;"  # Ermittlung von Schülern in jahrg jahrgang und b erstwahl
                     cur.execute(sql)
-                    zz = cur.fetchall()
-                    z = 0
-                    if zz[0][0]:
-                        z = zz[0][0]
-                    y = 0  # zaehler sID
-                    while y <= z:
-                        sql = "select sID FROM schueler WHERE '" + str(
-                            jahrg) + "' like sJahrg and sZu is NULL and '" + str(
-                            b) + "' like " + wahl + " and '" + str(
-                            y) + "' like sID;"  # Ermittlung von Schülern in jahrg jahrgang und b erstwahl
-                        cur.execute(sql)
-                        f = cur.fetchall()
-                        if f:
-                            ff = f[0][0]
-                            liste.append(ff)
-                        y += 1
-                    sql = "select pMaxS FROM projekte WHERE '" + str(jahrg) + "' like pJahrg and '" + str(
-                        b) + "' like pNum;"
-                    cur.execute(sql)
-                    maxanz0 = cur.fetchall()
-                    if maxanz0:
-                        if wahl == 'sErst':
-                            maxanz = maxanz0[0][0]
-                        else:
-                            sql = "select count(sID) FROM schueler WHERE '" + str(
-                                jahrg) + "' like sJahrg and '" + str(
-                                b) + "' like sZu;"
-                            cur.execute(sql)
-                            maxanz1 = cur.fetchall()
-                            maxanz = maxanz0[0][0] - maxanz1[0][0]
+                    f = cur.fetchall()
+                    if f:
+                        ff = f[0][0]
+                        liste.append(ff)
+                    y += 1
+                sql = "select pMaxS FROM projekte WHERE '" + str(jahrg) + "' like pJahrg and '" + str(
+                    b) + "' like pNum;"
+                cur.execute(sql)
+                maxanz0 = cur.fetchall()
+                if maxanz0:
+                    if wahl == 'sErst':
+                        maxanz = maxanz0[0][0]
                     else:
-                        maxanz = 0
-                    if maxanz > 0 and liste:
-                        if len(liste) <= maxanz:
-                            m = 0  # zähler der schüler
-                            while m < len(liste):
-                                sql = "update schueler set sZu='" + str(b) + "' where '" + str(liste[m]) + "'like sID;"
-                                cur.execute(sql)
-                                m += 1
-                        else:
-                            m = 0  # zähler der schüler
-                            listeaus1 = random.choices(liste, k=maxanz)
-                            while m < maxanz:
-                                sql = "update schueler set sZu='" + str(b) + "' where '" + str(
-                                    listeaus1[m]) + "'like sID;"
-                                cur.execute(sql)
-                                m += 1
-                    b = b + 1
+                        sql = "select count(sID) FROM schueler WHERE '" + str(
+                            jahrg) + "' like sJahrg and '" + str(
+                            b) + "' like sZu;"
+                        cur.execute(sql)
+                        maxanz1 = cur.fetchall()
+                        maxanz = maxanz0[0][0] - maxanz1[0][0]
+                else:
+                    maxanz = 0
+                if maxanz > 0 and liste:
+                    if len(liste) <= maxanz:
+                        m = 0  # zähler der schüler
+                        while m < len(liste):
+                            sql = "update schueler set sZu='" + str(b) + "' where '" + str(liste[m]) + "'like sID;"
+                            cur.execute(sql)
+                            m += 1
+                    else:
+                        m = 0  # zähler der schüler
+                        listeaus1 = random.choices(liste, k=maxanz)
+                        while m < maxanz:
+                            sql = "update schueler set sZu='" + str(b) + "' where '" + str(
+                                listeaus1[m]) + "'like sID;"
+                            cur.execute(sql)
+                            m += 1
+                b = b + 1
+        con.commit()
+        con.close()
+
+    def restzuordnung(self):
+        con = sqli.connect('pwvwp.db')
+        cur = con.cursor()
+
         jahrg = 4  # Jahrgang
         while jahrg <= 11:
             jahrg += 1
@@ -192,6 +197,7 @@ class Model(object):
                         schuler.pop(0)
             if len(schuler) != 0 and len(projekte) == 0:
                 showwarning('Fehler', 'Im ' + str(jahrg) + '. Jahrgang gibt es mehr Schüler als Plätze in den Kursen.')
+
         con.commit()
         con.close()
 
@@ -257,13 +263,6 @@ class Model(object):
 
         con.close()
         return erg
-
-
-#    def dbAuslesen(self):
-#        con = sqli.connect('pwvwp.db')
-#        cur = con.cursor()
-#        
-#        sql = "SELECT sName FROM schueler"
 
 
 class View(Tk):
@@ -341,6 +340,13 @@ class View(Tk):
         self.buttons['popup_OK'].pack(side=LEFT)
         self.buttons['popup_Cancel'].pack(side=LEFT)
 
+    def popup_Progressbar(self):
+        self.fenster['popup'] = Tk()
+        self.fenster['popup'].title('In Bearbeitung!')
+        self.fenster['popup'].resizable(0, 0)
+        self.labels['popup'] = Progressbar(self.fenster['popup'], orient='horizontal', length=250, mode='determinate')
+        self.labels['popup'].pack()
+
     def schulerhin(self):
         self.fenster['hin'] = Tk()
         self.fenster['hin'].title("Neue Schüler")
@@ -357,7 +363,7 @@ class View(Tk):
     def schuelerandern(self):
         try:
             self.fenster['ande'].destroy()
-        except TclError:
+        except:
             pass
         self.fenster.update({'ande': Tk()})
         self.fenster['ande'].title("Schüler ändern")
@@ -402,6 +408,7 @@ class Controller(object):
         self.view = View(self.importieren, self.exportieren, self.beenden, self.J5, self.J6, self.J7, self.J8, self.J9,
                          self.J10, self.J11, self.J12, self.tabelle_update, self.hinzufugen, self.zuordnen, self.ande,
                          self.a1, self.a2, self.a3, self.a4, self.a5, self.a6, self.a7)
+        self.wahlen = ('sErst', 'sZweit', 'sDritt')
         self.delimiter = {'imp_s': None, 'imp_p': None, 'exp': None}
         self.dchosen = None
         self.slcsv = 'schuelerliste.csv'
@@ -421,8 +428,17 @@ class Controller(object):
             self.view.entrys['ande_Eid'].insert(0, event.widget.selection()[0])
 
     def zuordnen(self):
-        self.model.zuordnen()
+        self.view.popup_Progressbar()
+        self.view.fenster['popup'].update()
+        for wahl in self.wahlen:
+            self.model.zuordnen(wahl)
+            self.view.labels['popup'].step(30)
+            self.view.fenster['popup'].update()
+        self.model.restzuordnung()
+        self.view.labels['popup'].step(10)
+        self.view.fenster['popup'].update()
         self.tabelle_update()
+        self.view.fenster['popup'].destroy()
 
     def delimOK(self):
         if isinstance(self.dchosen, tuple):
