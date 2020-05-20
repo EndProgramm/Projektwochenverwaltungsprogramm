@@ -143,7 +143,7 @@ class Model(object):
                         maxanz = maxanz0[0][0]
                 else:
                     maxanz = 0
-                if maxanz > 0 and liste:
+                if maxanz > 0:
                     if len(liste) <= maxanz:
                         m = 0  # zähler der schüler
                         while m < len(liste):
