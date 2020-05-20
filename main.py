@@ -39,22 +39,23 @@ class Model(object):
         file = open(slcsv, 'r')
         read = csv.reader(file, delimiter=delis)
         for row in read:
-            sql = "SELECT COUNT(*) FROM schueler WHERE sName = '" + row[0] + "' AND sVName = '" + row[
-                1] + "' AND sJahrg = '" + row[2] + "';"
+            sql = "SELECT COUNT(*) FROM schueler WHERE sName = '" + row[0] + "' AND sVName = '" + row[1] + "' AND sJahrg = '" + row[2] + "';"
             cur.execute(sql)
             test = cur.fetchall()
             if not test[0][0]:
                 sql = "INSERT INTO schueler(sName, sVName, sJahrg, sKla, sErst, sZweit, sDritt, sZu) VALUES('" + row[
                     0] + "', '" + row[1] + "', '" + row[2] + "', '" + row[3] + "', '" + row[4] + "', '" + row[
                           5] + "', '" + row[6] + "', NULL);"
+                print(9)
                 cur.execute(sql)
             else:
                 print('Eintrag bereits vorhanden!')
 
         # importieren der plcsv Datei
         file = open(plcsv, 'r')
-        read = csv.reader(file, delimiter=delip)
+        read = csv.reader(file, delimiter=";")
         for row in read:
+            print(99)
             sql = "SELECT COUNT(*) FROM projekte WHERE pName = '" + row[0] + "' AND pJahrg = '" + row[1] + "';"
             cur.execute(sql)
             test = cur.fetchall()
@@ -268,7 +269,9 @@ class View(Tk):
                  a7):
         Tk.__init__(self)
         self.title("Projektwochenverwaltungsprogramm")
-        self.geometry('800x300')
+        self.geometry('800x285')
+        self.maxsize(800,285)
+        self.minsize(800,285)
         # bestimmen der Callbacks
         self.callback_imp = imp
         self.callback_exp = exp
@@ -414,6 +417,7 @@ class Controller(object):
         self.andernx = ""
         self.tabelle()
         self.view.table.bind('<Double-Button-1>', self.treevent)
+        self.warten=0
 
         if os.path.exists('projektliste.csv') and os.path.exists('schuelerliste.csv') \
                 and not self.model.ausfuhren('SELECT * FROM schueler') \
@@ -426,17 +430,21 @@ class Controller(object):
             self.view.entrys['ande_Eid'].insert(0, event.widget.selection()[0])
 
     def zuordnen(self):
-        self.view.popup_Progressbar()
-        self.view.fenster['popup'].update()
-        for wahl in self.wahlen:
-            self.model.zuordnen(wahl)
-            self.view.labels['popup'].step(30)
+        if self.warten==0:
+            self.warten=1
+            self.view.popup_Progressbar()
             self.view.fenster['popup'].update()
-        self.model.restzuordnung()
-        self.view.labels['popup'].step(10)
-        self.view.fenster['popup'].update()
-        self.tabelle_update()
-        self.view.fenster['popup'].destroy()
+            for wahl in self.wahlen:
+                self.model.zuordnen(wahl)
+                self.view.labels['popup'].step(30)
+                self.view.fenster['popup'].update()
+            self.model.restzuordnung()
+            self.view.labels['popup'].step(9.9999999999)
+            self.view.fenster['popup'].update()
+            time.sleep(0.5)
+            self.tabelle_update()
+            self.view.fenster['popup'].destroy()
+            self.warten=0
 
     def delimOK(self):
         if isinstance(self.dchosen, tuple):
