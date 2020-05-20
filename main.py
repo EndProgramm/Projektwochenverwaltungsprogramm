@@ -134,15 +134,13 @@ class Model(object):
                 cur.execute(sql)
                 maxanz0 = cur.fetchall()
                 if maxanz0:
-                    if wahl == 'sErst':
-                        maxanz = maxanz0[0][0]
-                    else:
-                        sql = "select count(sID) FROM schueler WHERE '" + str(
-                            jahrg) + "' like sJahrg and '" + str(
-                            b) + "' like sZu;"
-                        cur.execute(sql)
-                        maxanz1 = cur.fetchall()
+                    sql = "select count(sID) FROM schueler WHERE '" + str(jahrg) + "' like sJahrg and '" + str(b) + "' like sZu;"
+                    cur.execute(sql)
+                    maxanz1 = cur.fetchall()
+                    if maxanz1:
                         maxanz = maxanz0[0][0] - maxanz1[0][0]
+                    else:
+                        maxanz = maxanz0[0][0]
                 else:
                     maxanz = 0
                 if maxanz > 0 and liste:
