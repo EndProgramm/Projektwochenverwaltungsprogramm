@@ -419,6 +419,7 @@ class Controller(object):
         self.andernx = ""
         self.tabelle()
         self.view.table.bind('<Double-Button-1>', self.treevent)
+        self.warten=False
 
         if os.path.exists('projektliste.csv') and os.path.exists('schuelerliste.csv') \
                 and not self.model.ausfuhren('SELECT * FROM schueler') \
@@ -431,22 +432,21 @@ class Controller(object):
             self.view.entrys['ande_Eid'].insert(0, event.widget.selection()[0])
 
     def zuordnen(self):
-        try:
-            self.view.fenster['popup'].destroy()
-        except:
-            pass
-        self.view.popup_Progressbar()
-        self.view.fenster['popup'].update()
-        for wahl in self.wahlen:
-            self.model.zuordnen(wahl)
-            self.view.labels['popup'].step(30)
+        if not self.warten:
+            self.warten=True 
+            self.view.popup_Progressbar()
             self.view.fenster['popup'].update()
-        self.model.restzuordnung()
-        self.view.labels['popup'].step(10)
-        self.view.fenster['popup'].update()
-        time.sleep(0.5)
-        self.tabelle_update()
-        self.view.fenster['popup'].destroy()
+            for wahl in self.wahlen:
+                self.model.zuordnen(wahl)
+                self.view.labels['popup'].step(30)
+                self.view.fenster['popup'].update()
+            self.model.restzuordnung()
+            self.view.labels['popup'].step(9.9999999999)
+            self.view.fenster['popup'].update()
+            time.sleep(0.5)
+            self.tabelle_update()
+            self.view.fenster['popup'].destroy()
+            self.warten=False
 
     def delimOK(self):
         if isinstance(self.dchosen, tuple):
