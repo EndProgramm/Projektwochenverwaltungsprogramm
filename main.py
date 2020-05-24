@@ -36,32 +36,39 @@ class Model(object):
         cur = con.cursor()
 
         # importieren der slcsv Datei
-        file = open(slcsv, 'r')
-        read = csv.reader(file, delimiter=delis)
-        for row in read:
-            sql = "SELECT COUNT(*) FROM schueler WHERE sName = '" + row[0] + "' AND sVName = '" + row[
-                1] + "' AND sJahrg = '" + row[2] + "';"
-            cur.execute(sql)
-            test = cur.fetchall()
-            if not test[0][0]:
-                sql = "INSERT INTO schueler(sName, sVName, sJahrg, sKla, sErst, sZweit, sDritt, sZu) VALUES('" + row[
-                    0] + "', '" + row[1] + "', '" + row[2] + "', '" + row[3] + "', '" + row[4] + "', '" + row[
-                          5] + "', '" + row[6] + "', NULL);"
+        try:
+            file = open(slcsv, 'r')
+            read = csv.reader(file, delimiter=delis)
+            for row in read:
+                sql = "SELECT COUNT(*) FROM schueler WHERE sName = '" + row[0] + "' AND sVName = '" + row[
+                    1] + "' AND sJahrg = '" + row[2] + "';"
                 cur.execute(sql)
+                test = cur.fetchall()
+                if not test[0][0]:
+                    sql = "INSERT INTO schueler(sName, sVName, sJahrg, sKla, sErst, sZweit, sDritt, sZu) VALUES('" + row[
+                        0] + "', '" + row[1] + "', '" + row[2] + "', '" + row[3] + "', '" + row[4] + "', '" + row[
+                              5] + "', '" + row[6] + "', NULL);"
+                    cur.execute(sql)
 
-        # importieren der plcsv Datei
-        file = open(plcsv, 'r')
-        read = csv.reader(file, delimiter=";")
-        for row in read:
-            sql = "SELECT COUNT(*) FROM projekte WHERE pName = '" + row[0] + "' AND pJahrg = '" + row[1] + "';"
-            cur.execute(sql)
-            test = cur.fetchall()
-            if not test[0][0]:
-                sql = "INSERT INTO projekte(pName, pJahrg, pNum, pMaxS) VALUES('" + row[0] + "', '" + row[1] + "', '" + \
-                      row[2] + "', '" + row[3] + "');"
+            # importieren der plcsv Datei
+            file = open(plcsv, 'r')
+            read = csv.reader(file, delimiter=delip)
+            for row in read:
+                sql = "SELECT COUNT(*) FROM projekte WHERE pName = '" + row[0] + "' AND pJahrg = '" + row[1] + "';"
                 cur.execute(sql)
+                test = cur.fetchall()
+                if not test[0][0]:
+                    sql = "INSERT INTO projekte(pName, pJahrg, pNum, pMaxS) VALUES('" + row[0] + "', '" + row[1] + "', '" + \
+                          row[2] + "', '" + row[3] + "');"
+                    cur.execute(sql)
+            con.commit()
+            showinfo('Importiert', 'Die CSV Dateien wurden importiert!')          
+            
+        except:
+            showwarning('Fehler', 'Falscher Delimiter oder falsches Tabellenformat')
+            return True
 
-        con.commit()
+        
         con.close()
 
     def exportCSV(self, slcsv, plcsv, delimiter):
@@ -373,7 +380,7 @@ class View(ttkthemes.ThemedTk):
     def schuelerandern(self):
         try:
             self.fenster['ande'].destroy()
-        except TclError:
+        except:
             pass
         self.fenster.update({'ande': Tk()})
         self.fenster['ande'].title("Schüler ändern")
@@ -427,15 +434,25 @@ class Controller(object):
         self.tabelle()
         self.view.table.bind('<Double-Button-1>', self.treevent)
         self.warten = False
+        self.importieren(True)
+        self.view.mainloop()
 
-        if os.path.exists('projektliste.csv') and os.path.exists('schuelerliste.csv') \
-                and not self.model.ausfuhren('SELECT * FROM schueler') \
-                and not self.model.ausfuhren('SELECT * FROM projekte'):
+
+    def prufen(self):
+        if os.path.exists('projektliste.csv') and os.path.exists('schuelerliste.csv'):
+            
             if askokcancel('Auto-import',
                            'Es wurden passende CSV-Dateien gefunden, wollen Sie diese jetzt importieren?'):
-                self.importieren()
+                self.slcsv = 'schuelerliste.csv'
+                self.plcsv = 'projektliste.csv'
+            else:
+                self.slcsv = ''
+                self.plcsv = ''
+        else:
+            self.slcsv = ''
+            self.plcsv = ''
 
-        self.view.mainloop()
+        
 
     def treevent(self, event):
         if self.view.table.identify_region(event.x, event.y) == 'cell':
@@ -468,7 +485,7 @@ class Controller(object):
         if self.delimiter == '' or len(self.delimiter[self.dchosen]) != 1:
             showwarning('Angabe ungültig', 'Das angegebene Trennzeichen ist ungültig oder es wurde keines Angegeben!'
                                            '\nBitte Geben Sie ein anderes Trennzeichen ein!')
-            self.view.fenster['popup'].destroy()
+            #self.view.fenster['popup'].destroy()
             self.delimiterFester(None)
         else:
             self.view.fenster['popup'].destroy()
@@ -498,29 +515,51 @@ class Controller(object):
                 return False
         return True
 
-    def importieren(self):
+    def importieren(self, erstes=False):
         if not bool(self.model.ausgabe('schueler')):
-            pass
-        elif askyesno('Bereits importiert', 'Es sind bereits CSV-Dateien importiert, wollen sie diese wirklich '
+            self.prufen()
+            
+        elif not erstes and askyesno('Bereits importiert', 'Es sind bereits CSV-Dateien importiert, wollen sie diese '
                                             'überschreiben?'):
-            pass
+            self.tablosch()
+            self.prufen()
         else:
             return
-        if not isinstance(self.slcsv, str):
+        if self.slcsv=="":
             self.slcsv = filedialog.askopenfilename(title="Schülerliste importieren",
                                                     filetypes=(("CSV Datei", "*.csv"), ("all files", "*.*")))
-            if bool(self.slcsv):  # keine Ausgabe von None bei askopenfile, deswegen als bool interpretieren
+            if self.slcsv!="":  # keine Ausgabe von None bei askopenfile, deswegen als bool interpretieren
                 # (nichts=False)
                 self.plcsv = filedialog.askopenfilename(title="Projektliste importieren",
                                                         filetypes=(("CSV Datei", "*.csv"), ("all files", "*.*")))
-        if (self.delimiter['imp_s'], self.delimiter['imp_p']) == (None, None) and bool(self.plcsv):
-            if self.delimiterFester(0) and self.delimiterFester(1):
-                self.model.importCSV(self.slcsv, self.plcsv, self.delimiter['imp_s'], self.delimiter['imp_p'])
-                showinfo('Importiert', 'Die CSV Dateien wurden importiert!')
+        self.csvimport()
+        
         if not bool(self.view.table.get_children()):
             self.tabelle()
         else:
             self.tabelle_update()
+            
+            
+    def csvimport(self):
+        if self.plcsv!="":
+            if self.delimiterFester(0) and self.delimiterFester(1):
+                if self.model.importCSV(self.slcsv, self.plcsv, self.delimiter['imp_s'], self.delimiter['imp_p']):
+                    self.csvimport()
+                    
+    def tablosch(self):
+            connection = sqli.connect('pwvwp.db')
+            cursor = connection.cursor()
+            sql = "Drop TABLE IF EXISTS projekte"
+            cursor.execute(sql)
+            sql = "Drop TABLE IF EXISTS schueler"
+            cursor.execute(sql)
+            sql = "CREATE TABLE projekte(pID INTEGER PRIMARY KEY, pName TEXT, pJahrg INTEGER, pNum INTEGER, pMaxS INTEGER)"
+            cursor.execute(sql)
+            sql = "CREATE TABLE schueler(sID INTEGER PRIMARY KEY, sVName TEXT, sName TEXT, sJahrg INTEGER, sKla INTEGER, " \
+                  "sErst INTEGER, sZweit INTEGER, sDritt INTEGER, sZu INTEGER); "
+            cursor.execute(sql)
+            connection.commit()
+            connection.close()
 
     def exportieren(self):
         slcsv = filedialog.asksaveasfilename(title='Schülerliste exportieren', defaultextension=".csv",
@@ -541,7 +580,7 @@ class Controller(object):
     def beenden(self):
         x = askokcancel(title='Beenden',
                         message='Möchtest du das Programm wirklich beenden?'
-                                '\nNicht abgeschlossene Aktionen könnten zu fehlern führen!')
+                                '\nNicht abackgroundeschlossene Aktionen könnten zu fehlern führen!')
         if x:
             self.view.destroy()
 
@@ -592,7 +631,7 @@ class Controller(object):
 
     def hinzufugen(self):
         for entry in range(7):
-            self.view.entrys[entry].config(bg='white')
+            self.view.entrys[entry].config(background='white')
         erst = self.view.entrys[4].get()
         zweit = self.view.entrys[5].get()
         dritt = self.view.entrys[6].get()
@@ -609,19 +648,19 @@ class Controller(object):
                                      self.view.entrys[3].get(), erst, zweit, dritt)):
                 for entry in range(7):
                     self.view.entrys[entry].delete(0, END)
-                self.view.buttons['hin'].config(bg="green")
+                #self.view.buttons['hin'].config(background="green")
             for entry in range(7):
                 self.view.entrys[entry].delete(0, END)
-                self.view.entrys[entry].config(bg='white')
+                self.view.entrys[entry].config(background='white')
         else:
-            self.view.buttons['hin'].config(bg="red")
+            #self.view.buttons['hin'].config(background="red")
             for i in range(4):
-                self.view.entrys[i].config(bg='white')
+                self.view.entrys[i].config(background='white')
                 if self.view.entrys[i].get() == "":
-                    self.view.entrys[i].config(bg='red')
+                    self.view.entrys[i].config(background='red')
         self.view.update()
         time.sleep(0.3)
-        self.view.buttons['hin'].config(bg="SystemButtonFace")
+        #self.view.buttons['hin'].config(background="SystemButtonFace")
         self.tabelle_update()
 
     def ande(self):
