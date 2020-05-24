@@ -7,7 +7,8 @@ import sqlite3 as sqli
 from tkinter import *
 from tkinter import filedialog  # muss aus unbekannten Gründen extra importiert werden
 from tkinter.messagebox import *
-from tkinter.ttk import Treeview, Progressbar
+from tkinter.ttk import *
+import ttkthemes
 
 
 class Model(object):
@@ -27,7 +28,6 @@ class Model(object):
               "sErst INTEGER, sZweit INTEGER, sDritt INTEGER, sZu INTEGER); "
         cursor.execute(sql)
 
-        print('Datenbank pwvwp.db mit Tabellen mitarbeiter und projekte angelegt.')
         connection.commit()
         connection.close()
 
@@ -47,16 +47,12 @@ class Model(object):
                 sql = "INSERT INTO schueler(sName, sVName, sJahrg, sKla, sErst, sZweit, sDritt, sZu) VALUES('" + row[
                     0] + "', '" + row[1] + "', '" + row[2] + "', '" + row[3] + "', '" + row[4] + "', '" + row[
                           5] + "', '" + row[6] + "', NULL);"
-                print(9)
                 cur.execute(sql)
-            else:
-                print('Eintrag bereits vorhanden!')
 
         # importieren der plcsv Datei
         file = open(plcsv, 'r')
         read = csv.reader(file, delimiter=";")
         for row in read:
-            print(99)
             sql = "SELECT COUNT(*) FROM projekte WHERE pName = '" + row[0] + "' AND pJahrg = '" + row[1] + "';"
             cur.execute(sql)
             test = cur.fetchall()
@@ -64,9 +60,6 @@ class Model(object):
                 sql = "INSERT INTO projekte(pName, pJahrg, pNum, pMaxS) VALUES('" + row[0] + "', '" + row[1] + "', '" + \
                       row[2] + "', '" + row[3] + "');"
                 cur.execute(sql)
-            else:
-                print('Eintrag bereits vorhanden!')
-        print('CSV-Dateien importiert!')
 
         con.commit()
         con.close()
@@ -76,6 +69,7 @@ class Model(object):
         cur = con.cursor()
 
         # auslesen der datenbankliste schueler in eine CSV-Datei
+        slcsv = open(slcsv, 'w', newline='')
         slfile = csv.writer(slcsv, delimiter=delimiter, quoting=csv.QUOTE_NONE)
         sql = "SELECT * FROM schueler;"
         cur.execute(sql)
@@ -83,17 +77,25 @@ class Model(object):
         for spalte in dboutput:
             spalte = list(spalte)
             del spalte[0]
+            for i in range(2):
+                err = spalte[i].find(';')
+                if err != -1:
+                    spalte[i] = spalte[i].replace(';', ',')
             slfile.writerow(spalte)
 
         # auslesen der datenbankliste projekte in eine CSV-Datei
+        plcsv = open(plcsv, 'w', newline='')
         plfile = csv.writer(plcsv, delimiter=delimiter, quoting=csv.QUOTE_NONE)
-        sql = "SELECT * FROM schueler;"
+        sql = "SELECT * FROM projekte;"
         cur.execute(sql)
         dboutput = cur.fetchall()
         for spalte in dboutput:
+            spalte = list(spalte)
+            del spalte[0]
+            err = spalte[0].find(';')
+            if err != -1:
+                spalte[0] = spalte[0].replace(';', ',')
             plfile.writerow(spalte)
-
-        print('Die Ergebnisse wurden in zwei CSV-Dateien Ausgegeben! Die Trennzeichen sind ";".')
         con.close()
 
     def zuordnen(self, wahl):
@@ -227,10 +229,14 @@ class Model(object):
                 else:
                     sql += value_tuple[i] + "', '"
             cur.execute(sql)
+            con.commit()
+            con.close()
+            return True
         else:
             showerror('Fehler', 'Schüler bereits vorhanden!')
-        con.commit()
-        con.close()
+            con.commit()
+            con.close()
+            return False
 
     def ausgabe(self, tabelle):
         con = sqli.connect('pwvwp.db')
@@ -266,10 +272,11 @@ class Model(object):
         return erg
 
 
-class View(Tk):
+class View(ttkthemes.ThemedTk):
     def __init__(self, imp, exp, bee, j5, j6, j7, j8, j9, j10, j11, j12, ja, hin, zord, ande, a1, a2, a3, a4, a5, a6,
                  a7):
-        Tk.__init__(self)
+        # print(ttkthemes.THEMES)
+        ttkthemes.ThemedTk.__init__(self, theme='breeze')
         self.title("Projektwochenverwaltungsprogramm")
         self.geometry('800x285')
         self.maxsize(800, 285)
@@ -295,25 +302,28 @@ class View(Tk):
         self.fenster = {}
 
         # erstellen des Menüs
-        self.menubar = Menu(self)
-        self.filemenu = Menu(self.menubar, tearoff=0)
-        self.filemenu.add_command(label="importieren", command=self.callback_imp)
-        self.filemenu.add_command(label="exportieren", command=self.callback_exp)
-        self.filemenu.add_separator()
-        self.filemenu.add_command(label="Beenden", command=self.callback_bee)
-        self.menubar.add_cascade(label="Datei", menu=self.filemenu)
-        self.fmenu = Menu(self.menubar, tearoff=0)
-        self.fmenu.add_command(label="hinzufügen", command=self.schulerhin)
-        self.fmenu.add_command(label="ändern", command=self.schuelerandern)
-        self.menubar.add_cascade(label="Schüler", menu=self.fmenu)
-        self.config(menu=self.menubar)
+        self.menu = {'main': Menu(self)}
+        self.menu['file'] = Menu(self.menu['main'], tearoff=0)
+        self.menu['file'].add_command(label="importieren", command=self.callback_imp)
+        self.menu['file'].add_command(label="exportieren", command=self.callback_exp)
+        self.menu['file'].add_separator()
+        self.menu['file'].add_command(label="Beenden", command=self.callback_bee)
+        self.menu['main'].add_cascade(label="Datei", menu=self.menu['file'])
+        self.menu['schueler'] = Menu(self.menu['main'], tearoff=0)
+        self.menu['schueler'].add_command(label="hinzufügen", command=self.schulerhin)
+        self.menu['schueler'].add_command(label="ändern", command=self.schuelerandern)
+        self.menu['main'].add_cascade(label="Schüler", menu=self.menu['schueler'])
+        self.menu['tools'] = Menu(self.menu['main'], tearoff=0)
+        self.menu['tools'].add_command(label="Schüler Projekten zuordnen", command=self.callback_zord)
+        self.menu['main'].add_cascade(label="Tools", menu=self.menu['tools'])
+        self.config(menu=self.menu['main'])
 
         for i in range(len(self.names['jahrg'])):
             self.radios['jahrg-' + self.names['jahrg'][i]] = Radiobutton(self.rahmen[11], text=self.names['jahrg'][i],
                                                                          variable=self.vars['jahrg'], value=i,
                                                                          command=self.radiocom['jahrg'][i])
             self.radios['jahrg-' + self.names['jahrg'][i]].pack(side=LEFT)
-        self.radios['jahrg-Alle'].select()
+        self.radios['jahrg-Alle'].invoke()
 
         # Tabelle
         self.scrollbar = Scrollbar(self.rahmen[2], orient="vertical")
@@ -323,9 +333,6 @@ class View(Tk):
         self.rahmen[1].pack()
         self.rahmen[2].pack(fill=X)
         self.rahmen[11].pack(side=LEFT, fill=X)
-
-        self.buttons['zuordnen'] = Button(text="Zuordnen", command=self.callback_zord)
-        self.buttons['zuordnen'].pack(fill=X, padx=4, pady=4)
 
     def popup_textentry(self, text, call_ok, call_cancel):
         self.fenster['popup'] = Tk()
@@ -366,7 +373,7 @@ class View(Tk):
     def schuelerandern(self):
         try:
             self.fenster['ande'].destroy()
-        except:
+        except TclError:
             pass
         self.fenster.update({'ande': Tk()})
         self.fenster['ande'].title("Schüler ändern")
@@ -390,7 +397,7 @@ class View(Tk):
                                                                            variable=self.vars['ande'], value=i,
                                                                            command=self.radiocom['ande'][i])
             self.radios['ande-' + self.names['schueler'][i]].pack(side=LEFT, fill=X)
-        self.radios['ande-Vorname'].select()
+        self.radios['ande-Vorname'].invoke()
         self.rahmen['ande_r'].pack(fill=X)
 
         self.rahmen['ande_e'] = Frame(self.rahmen['ande_change'])
@@ -419,12 +426,16 @@ class Controller(object):
         self.andernx = ""
         self.tabelle()
         self.view.table.bind('<Double-Button-1>', self.treevent)
-        self.warten=False
+        self.warten = False
 
         if os.path.exists('projektliste.csv') and os.path.exists('schuelerliste.csv') \
                 and not self.model.ausfuhren('SELECT * FROM schueler') \
                 and not self.model.ausfuhren('SELECT * FROM projekte'):
-            self.importieren()
+            if askokcancel('Auto-import',
+                           'Es wurden passende CSV-Dateien gefunden, wollen Sie diese jetzt importieren?'):
+                self.importieren()
+
+        self.view.mainloop()
 
     def treevent(self, event):
         if self.view.table.identify_region(event.x, event.y) == 'cell':
@@ -433,7 +444,7 @@ class Controller(object):
 
     def zuordnen(self):
         if not self.warten:
-            self.warten=True 
+            self.warten = True
             self.view.popup_Progressbar()
             self.view.fenster['popup'].update()
             for wahl in self.wahlen:
@@ -446,7 +457,7 @@ class Controller(object):
             time.sleep(0.5)
             self.tabelle_update()
             self.view.fenster['popup'].destroy()
-            self.warten=False
+            self.warten = False
 
     def delimOK(self):
         if isinstance(self.dchosen, tuple):
@@ -454,7 +465,7 @@ class Controller(object):
                 self.delimiter[d] = self.view.entrys['popup'].get()
         else:
             self.delimiter[self.dchosen] = self.view.entrys['popup'].get()
-        if self.delimiter == '':
+        if self.delimiter == '' or len(self.delimiter[self.dchosen]) != 1:
             showwarning('Angabe ungültig', 'Das angegebene Trennzeichen ist ungültig oder es wurde keines Angegeben!'
                                            '\nBitte Geben Sie ein anderes Trennzeichen ein!')
             self.view.fenster['popup'].destroy()
@@ -471,12 +482,30 @@ class Controller(object):
             self.dchosen = list(self.delimiter.keys())[d[0]], list(self.delimiter.keys())[d[1]]
         elif self.dchosen is None:
             self.dchosen = list(self.delimiter.keys())[d]
-        self.view.popup_textentry('Bitte geben Sie das Trennzeichen der CSV-Datei an:', self.delimOK, self.delimCanc)
+        if d == 0:
+            self.view.popup_textentry('Bitte geben Sie das Trennzeichen der Schuelerlisten CSV-Datei an:', self.delimOK,
+                                      self.delimCanc)
+        if d == 1:
+            self.view.popup_textentry('Bitte geben Sie das Trennzeichen der Projektlisten CSV-Datei an:', self.delimOK,
+                                      self.delimCanc)
+        if d == 2:
+            self.view.popup_textentry('Bitte geben Sie das Trennzeichen der CSV-Dateien an:', self.delimOK,
+                                      self.delimCanc)
         while self.dchosen is not None:
-            self.view.fenster['popup'].update()
+            try:
+                self.view.fenster['popup'].update()
+            except TclError:
+                return False
         return True
 
     def importieren(self):
+        if not bool(self.model.ausgabe('schueler')):
+            pass
+        elif askyesno('Bereits importiert', 'Es sind bereits CSV-Dateien importiert, wollen sie diese wirklich '
+                                            'überschreiben?'):
+            pass
+        else:
+            return
         if not isinstance(self.slcsv, str):
             self.slcsv = filedialog.askopenfilename(title="Schülerliste importieren",
                                                     filetypes=(("CSV Datei", "*.csv"), ("all files", "*.*")))
@@ -485,29 +514,29 @@ class Controller(object):
                 self.plcsv = filedialog.askopenfilename(title="Projektliste importieren",
                                                         filetypes=(("CSV Datei", "*.csv"), ("all files", "*.*")))
         if (self.delimiter['imp_s'], self.delimiter['imp_p']) == (None, None) and bool(self.plcsv):
-            if self.delimiterFester((0, 1)):
+            if self.delimiterFester(0) and self.delimiterFester(1):
                 self.model.importCSV(self.slcsv, self.plcsv, self.delimiter['imp_s'], self.delimiter['imp_p'])
+                showinfo('Importiert', 'Die CSV Dateien wurden importiert!')
         if not bool(self.view.table.get_children()):
             self.tabelle()
         else:
             self.tabelle_update()
 
     def exportieren(self):
-        slcsv = filedialog.asksaveasfile(mode='w', title='Schülerliste exportieren', defaultextension=".csv",
-                                         initialfile='schuelerl_fertig',
-                                         filetypes=(("CSV Datei", "*.csv"), ("Txt Datei", "*.txt"),
-                                                    ("all files", "*.*")))
-        if slcsv is not None:
-            plcsv = filedialog.asksaveasfile(mode='w', title='Projektliste exportieren', defaultextension=".csv",
-                                             initialfile='projektel_fertig',
+        slcsv = filedialog.asksaveasfilename(title='Schülerliste exportieren', defaultextension=".csv",
+                                             initialfile='schuelerl_fertig',
                                              filetypes=(("CSV Datei", "*.csv"), ("Txt Datei", "*.txt"),
                                                         ("all files", "*.*")))
+        if slcsv is not None:
+            plcsv = filedialog.asksaveasfilename(title='Projektliste exportieren', defaultextension=".csv",
+                                                 initialfile='projektel_fertig',
+                                                 filetypes=(("CSV Datei", "*.csv"), ("Txt Datei", "*.txt"),
+                                                            ("all files", "*.*")))
             if plcsv is not None:
                 if self.delimiterFester(2):
                     self.model.exportCSV(slcsv, plcsv, self.delimiter['exp'])
-        else:
-            showinfo('Exportiert', "Die Tabellen wurden in zwei CSV-Dateien mit '" + self.delimiter['exp'] +
-                     "' als Trennzeichen ausgegeben!")
+                    showinfo('Exportiert', "Die Tabellen wurden in zwei CSV-Dateien mit '" + self.delimiter['exp'] +
+                             "' als Trennzeichen ausgegeben!")
 
     def beenden(self):
         x = askokcancel(title='Beenden',
@@ -536,11 +565,14 @@ class Controller(object):
         self.view.table.pack(fill=X)
 
     def tabelle_update(self, fetch=None):
-        self.view.table.delete(*self.view.table.get_children())
-        if fetch is None:
-            fetch = self.model.ausgabe('schueler')
-        for t in fetch:
-            self.view.table.insert('', t[0], t[0], values=t)
+        try:
+            self.view.table.delete(*self.view.table.get_children())
+            if fetch is None:
+                fetch = self.model.ausgabe('schueler')
+            for t in fetch:
+                self.view.table.insert('', t[0], t[0], values=t)
+        except AttributeError:
+            pass
 
     def tabelle_sorti(self, col, descending):
         data = [(self.view.table.set(tvindex, col), tvindex) for tvindex in self.view.table.get_children('')]
@@ -559,7 +591,7 @@ class Controller(object):
         self.view.table.heading(col, command=lambda: self.tabelle_sorti(col, not descending))
 
     def hinzufugen(self):
-        for entry in self.view.entrys:
+        for entry in range(7):
             self.view.entrys[entry].config(bg='white')
         erst = self.view.entrys[4].get()
         zweit = self.view.entrys[5].get()
@@ -572,14 +604,13 @@ class Controller(object):
             erst = "33"
         if self.view.entrys[0].get() != "" and self.view.entrys[1].get() != "" and \
                 self.view.entrys[2].get() != "" and self.view.entrys[3].get() != "":
-            self.model.einfuegen('schueler', ('sName', 'sVName', 'sJahrg', 'sKla', 'sErst', 'sZweit', 'sDritt'),
-                                 (self.view.entrys[1].get(), self.view.entrys[0].get(),
-                                  self.view.entrys[2].get(), self.view.entrys[3].get(), erst, zweit, dritt))
-            self.view.buttons['hin'].config(bg="green")
-            for entry in range(4):
-                self.view.entrys[entry].delete(0, END)
-            self.view.buttons['hin'].config(bg="green")
-            for entry in range(4):
+            if self.model.einfuegen('schueler', ('sName', 'sVName', 'sJahrg', 'sKla', 'sErst', 'sZweit', 'sDritt'),
+                                    (self.view.entrys[1].get(), self.view.entrys[0].get(), self.view.entrys[2].get(),
+                                     self.view.entrys[3].get(), erst, zweit, dritt)):
+                for entry in range(7):
+                    self.view.entrys[entry].delete(0, END)
+                self.view.buttons['hin'].config(bg="green")
+            for entry in range(7):
                 self.view.entrys[entry].delete(0, END)
                 self.view.entrys[entry].config(bg='white')
         else:
@@ -590,7 +621,7 @@ class Controller(object):
                     self.view.entrys[i].config(bg='red')
         self.view.update()
         time.sleep(0.3)
-        self.view.buttons['hin'].config(bg="white")
+        self.view.buttons['hin'].config(bg="SystemButtonFace")
         self.tabelle_update()
 
     def ande(self):
@@ -657,4 +688,3 @@ class Controller(object):
 
 
 c = Controller()
-c.view.mainloop()
