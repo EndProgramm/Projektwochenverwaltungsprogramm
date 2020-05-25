@@ -513,7 +513,6 @@ class Controller(object):
         if self.delimiter == '' or len(self.delimiter[self.dchosen]) != 1:
             showwarning('Angabe ungültig', 'Das angegebene Trennzeichen ist ungültig oder es wurde keines Angegeben!'
                                            '\nBitte Geben Sie ein anderes Trennzeichen ein!')
-            self.view.fenster['popup'].destroy()
             self.delimiterFester(None)
         else:
             self.view.fenster['popup'].destroy()
