@@ -14,9 +14,9 @@ import ttkthemes
 class Model(object):
     def __init__(self):
         if not os.path.exists('pwvwp.db'):
-            self.dbAnlegen()
+            self.createDB()
 
-    def dbAnlegen(self):
+    def createDB(self):
         connection = sqli.connect('pwvwp.db')
         cursor = connection.cursor()
 
@@ -30,6 +30,16 @@ class Model(object):
 
         connection.commit()
         connection.close()
+
+    def clearDB(self):
+        con = sqli.connect('pwvwp.db')
+        cur = con.cursor()
+        sql = "Drop TABLE IF EXISTS projekte"
+        cur.execute(sql)
+        sql = "Drop TABLE IF EXISTS schueler"
+        cur.execute(sql)
+        con.commit()
+        con.close()
 
     def importCSV(self, slcsv, plcsv, delis, delip):  # sl = schuelerliste, pl = projektliste
         con = sqli.connect('pwvwp.db')
@@ -45,8 +55,8 @@ class Model(object):
                 cur.execute(sql)
                 test = cur.fetchall()
                 if not test[0][0]:
-                    sql = "INSERT INTO schueler(sName, sVName, sJahrg, sKla, sErst, sZweit, sDritt, sZu) VALUES('" + row[
-                        0] + "', '" + row[1] + "', '" + row[2] + "', '" + row[3] + "', '" + row[4] + "', '" + row[
+                    sql = "INSERT INTO schueler(sName, sVName, sJahrg, sKla, sErst, sZweit, sDritt, sZu) VALUES('" + \
+                          row[0] + "', '" + row[1] + "', '" + row[2] + "', '" + row[3] + "', '" + row[4] + "', '" + row[
                               5] + "', '" + row[6] + "', NULL);"
                     cur.execute(sql)
 
@@ -58,17 +68,16 @@ class Model(object):
                 cur.execute(sql)
                 test = cur.fetchall()
                 if not test[0][0]:
-                    sql = "INSERT INTO projekte(pName, pJahrg, pNum, pMaxS) VALUES('" + row[0] + "', '" + row[1] + "', '" + \
+                    sql = "INSERT INTO projekte(pName, pJahrg, pNum, pMaxS) VALUES('" + row[0] + "', '" + row[
+                        1] + "', '" + \
                           row[2] + "', '" + row[3] + "');"
                     cur.execute(sql)
             con.commit()
-            showinfo('Importiert', 'Die CSV Dateien wurden importiert!')          
-            
+            showinfo('Importiert', 'Die CSV Dateien wurden importiert!')
         except:
             showwarning('Fehler', 'Falscher Delimiter oder falsches Tabellenformat')
             return True
 
-        
         con.close()
 
     def exportCSV(self, slcsv, plcsv, delimiter):
@@ -282,12 +291,18 @@ class Model(object):
 class View(ttkthemes.ThemedTk):
     def __init__(self, imp, exp, bee, j5, j6, j7, j8, j9, j10, j11, j12, ja, hin, zord, ande, a1, a2, a3, a4, a5, a6,
                  a7):
-        # print(ttkthemes.THEMES)
+        # print(ttkthemes.THEMES)   # zum Ausgeben der verfügbaren Themes
         ttkthemes.ThemedTk.__init__(self, theme='breeze')
         self.title("Projektwochenverwaltungsprogramm")
-        self.geometry('800x285')
-        self.maxsize(800, 285)
-        self.minsize(800, 285)
+        self.geometry('800x300')
+        self.maxsize(800, 300)
+        self.minsize(800, 300)
+
+        # Ttk Styles
+        self.styles = Style().configure('confirm', background='green')
+        self.styles = Style().configure('error', background='red')
+        self.styles = Style().configure('default', background='SystemButtonFace')
+
         # bestimmen der Callbacks
         self.callback_imp = imp
         self.callback_exp = exp
@@ -433,26 +448,8 @@ class Controller(object):
         self.andernx = ""
         self.tabelle()
         self.view.table.bind('<Double-Button-1>', self.treevent)
-        self.warten = False
         self.importieren(True)
         self.view.mainloop()
-
-
-    def prufen(self):
-        if os.path.exists('projektliste.csv') and os.path.exists('schuelerliste.csv'):
-            
-            if askokcancel('Auto-import',
-                           'Es wurden passende CSV-Dateien gefunden, wollen Sie diese jetzt importieren?'):
-                self.slcsv = 'schuelerliste.csv'
-                self.plcsv = 'projektliste.csv'
-            else:
-                self.slcsv = ''
-                self.plcsv = ''
-        else:
-            self.slcsv = ''
-            self.plcsv = ''
-
-        
 
     def treevent(self, event):
         if self.view.table.identify_region(event.x, event.y) == 'cell':
@@ -460,21 +457,22 @@ class Controller(object):
             self.view.entrys['ande_Eid'].insert(0, event.widget.selection()[0])
 
     def zuordnen(self):
-        if not self.warten:
-            self.warten = True
-            self.view.popup_Progressbar()
-            self.view.fenster['popup'].update()
-            for wahl in self.wahlen:
-                self.model.zuordnen(wahl)
-                self.view.labels['popup'].step(30)
-                self.view.fenster['popup'].update()
-            self.model.restzuordnung()
-            self.view.labels['popup'].step(9.9999999999)
-            self.view.fenster['popup'].update()
-            time.sleep(0.5)
-            self.tabelle_update()
+        try:
             self.view.fenster['popup'].destroy()
-            self.warten = False
+        except TclError:
+            pass
+        self.view.popup_Progressbar()
+        self.view.fenster['popup'].update()
+        for wahl in self.wahlen:
+            self.model.zuordnen(wahl)
+            self.view.labels['popup'].step(30)
+            self.view.fenster['popup'].update()
+        self.model.restzuordnung()
+        self.view.labels['popup'].step(10)
+        self.view.fenster['popup'].update()
+        time.sleep(0.5)
+        self.tabelle_update()
+        self.view.fenster['popup'].destroy()
 
     def delimOK(self):
         if isinstance(self.dchosen, tuple):
@@ -485,7 +483,7 @@ class Controller(object):
         if self.delimiter == '' or len(self.delimiter[self.dchosen]) != 1:
             showwarning('Angabe ungültig', 'Das angegebene Trennzeichen ist ungültig oder es wurde keines Angegeben!'
                                            '\nBitte Geben Sie ein anderes Trennzeichen ein!')
-            #self.view.fenster['popup'].destroy()
+            self.view.fenster['popup'].destroy()
             self.delimiterFester(None)
         else:
             self.view.fenster['popup'].destroy()
@@ -515,51 +513,43 @@ class Controller(object):
                 return False
         return True
 
+    def autoimport(self):
+        if os.path.exists('projektliste.csv') and os.path.exists('schuelerliste.csv') and askokcancel('Auto-import',
+                                                                                                      'Es wurden passende CSV-Dateien gefunden, wollen Sie diese jetzt importieren?'):
+            self.slcsv = 'schuelerliste.csv'
+            self.plcsv = 'projektliste.csv'
+        else:
+            self.slcsv = ''
+            self.plcsv = ''
+
+    def csvimport(self):
+        if self.plcsv != "" and self.delimiterFester(0) and self.delimiterFester(1) and \
+                self.model.importCSV(self.slcsv, self.plcsv, self.delimiter['imp_s'], self.delimiter['imp_p']):
+            self.csvimport()
+
     def importieren(self, erstes=False):
         if not bool(self.model.ausgabe('schueler')):
-            self.prufen()
-            
+            self.autoimport()
+
         elif not erstes and askyesno('Bereits importiert', 'Es sind bereits CSV-Dateien importiert, wollen sie diese '
-                                            'überschreiben?'):
-            self.tablosch()
-            self.prufen()
+                                                           'überschreiben?'):
+            self.model.clearDB()
+            self.model.createDB()
+            self.autoimport()
         else:
             return
-        if self.slcsv=="":
+        if self.slcsv == "":
             self.slcsv = filedialog.askopenfilename(title="Schülerliste importieren",
                                                     filetypes=(("CSV Datei", "*.csv"), ("all files", "*.*")))
-            if self.slcsv!="":  # keine Ausgabe von None bei askopenfile, deswegen als bool interpretieren
-                # (nichts=False)
+            if self.slcsv != "":
                 self.plcsv = filedialog.askopenfilename(title="Projektliste importieren",
                                                         filetypes=(("CSV Datei", "*.csv"), ("all files", "*.*")))
         self.csvimport()
-        
+
         if not bool(self.view.table.get_children()):
             self.tabelle()
         else:
             self.tabelle_update()
-            
-            
-    def csvimport(self):
-        if self.plcsv!="":
-            if self.delimiterFester(0) and self.delimiterFester(1):
-                if self.model.importCSV(self.slcsv, self.plcsv, self.delimiter['imp_s'], self.delimiter['imp_p']):
-                    self.csvimport()
-                    
-    def tablosch(self):
-            connection = sqli.connect('pwvwp.db')
-            cursor = connection.cursor()
-            sql = "Drop TABLE IF EXISTS projekte"
-            cursor.execute(sql)
-            sql = "Drop TABLE IF EXISTS schueler"
-            cursor.execute(sql)
-            sql = "CREATE TABLE projekte(pID INTEGER PRIMARY KEY, pName TEXT, pJahrg INTEGER, pNum INTEGER, pMaxS INTEGER)"
-            cursor.execute(sql)
-            sql = "CREATE TABLE schueler(sID INTEGER PRIMARY KEY, sVName TEXT, sName TEXT, sJahrg INTEGER, sKla INTEGER, " \
-                  "sErst INTEGER, sZweit INTEGER, sDritt INTEGER, sZu INTEGER); "
-            cursor.execute(sql)
-            connection.commit()
-            connection.close()
 
     def exportieren(self):
         slcsv = filedialog.asksaveasfilename(title='Schülerliste exportieren', defaultextension=".csv",
@@ -580,7 +570,7 @@ class Controller(object):
     def beenden(self):
         x = askokcancel(title='Beenden',
                         message='Möchtest du das Programm wirklich beenden?'
-                                '\nNicht abackgroundeschlossene Aktionen könnten zu fehlern führen!')
+                                '\nNicht abgeschlossene Aktionen könnten zu fehlern führen!')
         if x:
             self.view.destroy()
 
@@ -648,19 +638,19 @@ class Controller(object):
                                      self.view.entrys[3].get(), erst, zweit, dritt)):
                 for entry in range(7):
                     self.view.entrys[entry].delete(0, END)
-                #self.view.buttons['hin'].config(background="green")
+                self.view.buttons['hin'].configure('confirm')
             for entry in range(7):
                 self.view.entrys[entry].delete(0, END)
-                self.view.entrys[entry].config(background='white')
+                self.view.entrys[entry].configure('default')
         else:
-            #self.view.buttons['hin'].config(background="red")
+            self.view.buttons['hin'].configure('error')
             for i in range(4):
-                self.view.entrys[i].config(background='white')
+                self.view.entrys[i].configure('default')
                 if self.view.entrys[i].get() == "":
-                    self.view.entrys[i].config(background='red')
+                    self.view.entrys[i].configure('error')
         self.view.update()
         time.sleep(0.3)
-        #self.view.buttons['hin'].config(background="SystemButtonFace")
+        self.view.buttons['hin'].configure('default')
         self.tabelle_update()
 
     def ande(self):
