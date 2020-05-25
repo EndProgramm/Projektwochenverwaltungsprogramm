@@ -289,7 +289,8 @@ class Model(object):
 
 
 class View(ttkthemes.ThemedTk):
-    def __init__(self, imp, exp, bee, j5, j6, j7, j8, j9, j10, j11, j12, ja, hin, zord, ande, a1, a2, a3, a4, a5, a6,
+    def __init__(self, imp, exp, bee, j5, j6, j7, j8, j9, j10, j11, j12, ja, tabsort, hin, zord, ande, a1, a2, a3, a4,
+                 a5, a6,
                  a7):
         # print(ttkthemes.THEMES)   # zum Ausgeben der verfügbaren Themes
         ttkthemes.ThemedTk.__init__(self, theme='breeze')
@@ -308,6 +309,7 @@ class View(ttkthemes.ThemedTk):
         self.callback_exp = exp
         self.callback_bee = bee
         self.radiocom = {'jahrg': [j5, j6, j7, j8, j9, j10, j11, j12, ja], 'ande': [a1, a2, a3, a4, a5, a6, a7]}
+        self.tabelle_sorti = tabsort
         self.callback_zord = zord
         self.callback_hin = hin
         self.callback_ande = ande
@@ -355,6 +357,23 @@ class View(ttkthemes.ThemedTk):
         self.rahmen[1].pack()
         self.rahmen[2].pack(fill=X)
         self.rahmen[11].pack(side=LEFT, fill=X)
+
+    def tabelle(self, fetch):
+        width = [35, 75, 75, 50, 50, 100, 100, 100, 75]
+        ml = ['ID']
+        for namen in self.names['schueler']:
+            ml.append(namen)
+        ml.append('Zugeordned zu')
+        self.table['columns'] = ml
+        self.table['show'] = 'headings'
+        for i in range(len(ml)):
+            self.table.column(ml[i], width=width[i], minwidth=width[i])
+        for i in range(len(ml)):
+            self.table.heading(ml[i], text=ml[i], command=lambda col=i: self.tabelle_sorti(col, False))
+        for t in fetch:
+            self.table.insert('', t[0], t[0], values=t)
+        self.scrollbar.config(command=self.table.yview)
+        self.table.pack(fill=X)
 
     def popup_textentry(self, text, call_ok, call_cancel):
         self.fenster['popup'] = Tk()
@@ -438,17 +457,22 @@ class Controller(object):
     def __init__(self):
         self.model = Model()
         self.view = View(self.importieren, self.exportieren, self.beenden, self.J5, self.J6, self.J7, self.J8, self.J9,
-                         self.J10, self.J11, self.J12, self.tabelle_update, self.hinzufugen, self.zuordnen, self.ande,
-                         self.a1, self.a2, self.a3, self.a4, self.a5, self.a6, self.a7)
+                         self.J10, self.J11, self.J12, self.tabelle_update, self.tabelle_sorti, self.hinzufugen,
+                         self.zuordnen, self.ande, self.a1, self.a2, self.a3, self.a4, self.a5, self.a6, self.a7)
         self.wahlen = ('sErst', 'sZweit', 'sDritt')
         self.delimiter = {'imp_s': None, 'imp_p': None, 'exp': None}
         self.dchosen = None
         self.slcsv = 'schuelerliste.csv'
         self.plcsv = 'projektliste.csv'
+        self.double = False
         self.andernx = ""
+
         self.tabelle()
         self.view.table.bind('<Double-Button-1>', self.treevent)
-        self.importieren(True)
+        # Erstinitialisierung
+        if self.model.ausgabe('schueler'):
+            self.importieren(True)
+
         self.view.mainloop()
 
     def treevent(self, event):
@@ -457,22 +481,28 @@ class Controller(object):
             self.view.entrys['ande_Eid'].insert(0, event.widget.selection()[0])
 
     def zuordnen(self):
-        try:
-            self.view.fenster['popup'].destroy()
-        except TclError:
-            pass
-        self.view.popup_Progressbar()
-        self.view.fenster['popup'].update()
-        for wahl in self.wahlen:
-            self.model.zuordnen(wahl)
-            self.view.labels['popup'].step(30)
+        if not self.double:
+            self.double = True
+            try:
+                self.view.fenster['popup'].destroy()
+            except (TclError, KeyError):
+                pass
+            self.view.popup_Progressbar()
             self.view.fenster['popup'].update()
-        self.model.restzuordnung()
-        self.view.labels['popup'].step(10)
-        self.view.fenster['popup'].update()
-        time.sleep(0.5)
-        self.tabelle_update()
-        self.view.fenster['popup'].destroy()
+            for wahl in self.wahlen:
+                self.model.zuordnen(wahl)
+                self.view.labels['popup'].step(30)
+                self.view.fenster['popup'].update()
+            self.model.restzuordnung()
+            self.view.labels['popup'].step(10)
+            self.view.fenster['popup'].update()
+            time.sleep(0.5)
+            self.tabelle_update()
+            self.view.fenster['popup'].destroy()
+            self.double = False
+        else:
+            showwarning('Doppelte Operation',
+                        'Es wird bereits eine Zuordnung durchgeführt, bitte warten Sie bis zur Vollendung dieser, bis Sie die nächste ausführen')
 
     def delimOK(self):
         if isinstance(self.dchosen, tuple):
@@ -577,21 +607,7 @@ class Controller(object):
     def tabelle(self, fetch=None):
         if fetch is None:
             fetch = self.model.ausgabe('schueler')
-        width = [35, 75, 75, 50, 50, 100, 100, 100, 75]
-        ml = ['ID']
-        for namen in self.view.names['schueler']:
-            ml.append(namen)
-        ml.append('Zugeordned zu')
-        self.view.table['columns'] = ml
-        self.view.table['show'] = 'headings'
-        for i in range(len(ml)):
-            self.view.table.column(ml[i], width=width[i], minwidth=width[i])
-        for i in range(len(ml)):
-            self.view.table.heading(ml[i], text=ml[i], command=lambda col=i: self.tabelle_sorti(col, False))
-        for t in fetch:
-            self.view.table.insert('', t[0], t[0], values=t)
-        self.view.scrollbar.config(command=self.view.table.yview)
-        self.view.table.pack(fill=X)
+        self.view.tabelle(fetch)
 
     def tabelle_update(self, fetch=None):
         try:
