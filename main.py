@@ -380,16 +380,17 @@ class View(ttkthemes.ThemedTk):
         self.fenster['popup'].title('Aktion erforderlich!')
         self.fenster['popup'].geometry("300x125")
         self.fenster['popup'].resizable(0, 0)
-        self.labels['popup'] = Label(self.fenster['popup'], text=text, font=('Arial', 13), wraplength=275)
+        self.labels['popup'] = Label(self.fenster['popup'], text=text, font=('Arial', 13), wraplength=275,
+                                     anchor='center')
         self.entrys['popup'] = Entry(self.fenster['popup'])
         self.rahmen['popup'] = Frame(self.fenster['popup'])
         self.buttons['popup_OK'] = Button(self.rahmen['popup'], text='Ok', command=call_ok, width=10)
-        self.buttons['popup_Cancel'] = Button(self.rahmen['popup'], text='Cancel', command=call_cancel, width=10)
+        # self.buttons['popup_Cancel'] = Button(self.rahmen['popup'], text='Cancel', command=call_cancel, width=10)
         self.labels['popup'].pack(fill=X)
         self.entrys['popup'].pack(pady=15)
         self.rahmen['popup'].pack()
         self.buttons['popup_OK'].pack(side=LEFT)
-        self.buttons['popup_Cancel'].pack(side=LEFT)
+        # self.buttons['popup_Cancel'].pack(side=LEFT)
 
     def popup_Progressbar(self):
         self.fenster['popup'] = Tk()
@@ -469,7 +470,7 @@ class Controller(object):
 
         self.tabelle()
         self.view.table.bind('<Double-Button-1>', self.treevent)
-        # Erstinitialisierung
+        # Erstimportierung
         if self.model.ausgabe('schueler'):
             self.importieren(True)
 
