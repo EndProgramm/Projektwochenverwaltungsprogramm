@@ -220,6 +220,8 @@ class Model(object):
                         sql = "update schueler set sZu='" + str(projekte[0][0]) + "' where '" + str(
                             schuler[0][0]) + "'like sID ;"
                         cur.execute(sql)
+                        projekte[0]=(projekte[0][0],projekte[0][1]-1)
+                        print(jahrg, projekte)
                         schuler.pop(0)
             
             if len(schuler) != 0 and len(projekte) == 0:
