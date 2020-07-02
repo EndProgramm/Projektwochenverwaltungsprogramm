@@ -10,8 +10,8 @@ import ttkthemes
 
 
 class View(ttkthemes.ThemedTk):
-    def __init__(self, imp, exp, bee, j5, j6, j7, j8, j9, j10, j11, j12, ja, tabsort, hin, zord, ande, a1, a2, a3, a4,
-                 a5, a6, a7):
+    def __init__(self, imp, exp, bee, j5, j6, j7, j8, j9, j10, j11, j12, ja, tabsort, hin, zord, ande, scht, prjt, a1,
+                 a2, a3, a4, a5, a6, a7):
         # print(ttkthemes.THEMES)   # zum Ausgeben der verfügbaren Themes
         ttkthemes.ThemedTk.__init__(self, theme='breeze')
         self.title("Projektwochenverwaltungsprogramm")
@@ -33,13 +33,16 @@ class View(ttkthemes.ThemedTk):
         self.callback_zord = zord
         self.callback_hin = hin
         self.callback_ande = ande
+        self.callback_scht = scht
+        self.callback_prjt = prjt
         self.names = {'schueler': ("Vorname", "Nachname", "Jahrg", "Klasse", "Erst Wunsch", "Zweit Wunsch",
                                    "Dritt Wunsch"),
+                      'projekte': ("Name", "Jahrgang", "Nummer", "zugeordnete Schüler", "max Schüler"),
                       'jahrg': ('5', '6', '7', '8', '9', '10', '11', '12', 'Alle')}
         self.labels = {}
         self.entrys = {}
         self.buttons = {}
-        self.vars = {'jahrg': IntVar(), 'ande': IntVar()}
+        self.vars = {'jahrg': IntVar(), 'ande': IntVar(), 'menu': IntVar()}
         self.radios = {}
         self.rahmen = {1: Frame(master=self), 2: Frame(master=self)}
         self.rahmen.update({11: Frame(master=self.rahmen[1])})
@@ -48,10 +51,13 @@ class View(ttkthemes.ThemedTk):
         # erstellen des Menüs
         self.menus = {}
         self.menu((('Datei', (
-            ("importieren", self.callback_imp), ("exportieren", self.callback_exp), ("-",),
-            ("beenden", self.callback_bee))),
-                   ('Schüler', (("hinzufügen", self.schulerhin), ("ändern", self.schuelerandern))),
-                   ('Tools', (("Schüler Projekten zuordnen", self.callback_zord),))))
+            (None, "importieren", self.callback_imp,), (None, "exportieren", self.callback_exp,), ('-', None),
+            (None, "beenden", self.callback_bee,))),
+                   ('Schüler', ((None, "hinzufügen", self.schulerhin,), (None, "ändern", self.schuelerandern,))),
+                   ('Tools', ((None, "Schüler Projekten zuordnen", self.callback_prjt,),)),
+                   ('Tabelle', (('.', "Schüler", self.callback_scht, self.vars['menu']),
+                                ('.', "Projekte", lambda fetch=self.callback_prjt: self.callback_scht(fetch),
+                                 self.vars['menu'])))))
         for i in range(len(self.names['jahrg'])):
             self.radios['jahrg-' + self.names['jahrg'][i]] = Radiobutton(self.rahmen[11], text=self.names['jahrg'][i],
                                                                          variable=self.vars['jahrg'], value=i,
@@ -69,14 +75,27 @@ class View(ttkthemes.ThemedTk):
         self.rahmen[11].pack(side=LEFT, fill=X)
 
     def menu(self, menu):
+        # angabe von Commands, normal ohne präfix. Bei Checkbox ']' und bei Radiobutton '.' als präfix.
+        # Bei beiden muss auch eine Konreollvariable wie IntVar angegeben werden. Für Seperator '-' ohne index 1 und 2.
+        # bsp.: self.menu(('Menuname', (("Command", callback, None), ("Radiobutton", callback, IntVar()), ("-", None,)))
         self.menus = {'main': Menu(self)}
         for cas, com in menu:
             self.menus[cas] = Menu(self.menus['main'], tearoff=0)
-            for command in com:
+            for i, command in enumerate(com):
                 if command[0] == '-':
                     self.menus[cas].add_separator()
+                elif command[0] == '.':
+                    if command[3] is None:
+                        print('Es muss eine Kontrollvariable angegeben werden')
+                        raise ValueError
+                    self.menus[cas].add_radiobutton(label=command[1], command=command[2], variable=command[3], value=i)
+                elif command[0] == ']':
+                    if command[3] is None:
+                        print('Es muss eine Kontrollvariable angegeben werden')
+                        raise ValueError
+                    self.menus[cas].add_checkbutton(label=command[1], command=command[2], variable=command[3], value=i)
                 else:
-                    self.menus[cas].add_command(label=command[0], command=command[1])
+                    self.menus[cas].add_command(label=command[1], command=command[2])
             self.menus['main'].add_cascade(label=cas, menu=self.menus[cas])
         self.config(menu=self.menus['main'])
 
@@ -93,7 +112,7 @@ class View(ttkthemes.ThemedTk):
         for i in range(len(ml)):
             self.table.heading(ml[i], text=ml[i], command=lambda col=i: self.tabelle_sorti(col, False))
         for t in fetch:
-            self.table.insert('', t[0], t[0], values=t)
+            self.table.insert('', t[0], t[0], values=t, tags=t[0])
         self.scrollbar.config(command=self.table.yview)
         self.table.pack(fill=X)
 

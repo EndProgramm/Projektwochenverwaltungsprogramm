@@ -15,7 +15,8 @@ class Controller(object):
         self.model = Model()
         self.view = View(self.importieren, self.exportieren, self.beenden, self.J5, self.J6, self.J7, self.J8, self.J9,
                          self.J10, self.J11, self.J12, self.tabelle_update, self.tabelle_sorti, self.hinzufugen,
-                         self.zuordnen, self.ande, self.a1, self.a2, self.a3, self.a4, self.a5, self.a6, self.a7)
+                         self.zuordnen, self.ande, self.tabelle_update, self.model.ausgabe('projekte'), self.a1,
+                         self.a2, self.a3, self.a4, self.a5, self.a6, self.a7)
         self.popup = None
         self.wahlen = ('sErst', 'sZweit', 'sDritt')
         self.delimiter = {'imp_s': None, 'imp_p': None, 'exp': None}
