@@ -44,6 +44,8 @@ class Controller(object):
             self.double = True
             self.popup = Popup()
             self.popup.progressbar()
+            self.popup.label.step(1)
+
             for wahl in self.wahlen:
                 self.model.zuordnen(wahl)
                 self.popup.label.step(30)
@@ -52,10 +54,11 @@ class Controller(object):
             if erg[0]:
                 showwarning('Fehler', 'In dem Jahrgang/den Jahrgängen ' + str(
                     erg[1]) + ' gibt es mehr Schüler als Plätze in den Kursen.')
-            self.popup.label.step(10)
+            self.popup.label.step(9)
             self.popup.update()
             time.sleep(0.5)
             self.tabelle_update()
+            self.view.vars['menu'].set(0)
             self.popup.destroy()
             self.double = False
         else:
@@ -169,14 +172,28 @@ class Controller(object):
         if fetch is None:
             fetch = self.model.ausgabe('schueler')
         self.view.tabelle(fetch)
+        self.tabelle_update()
 
-    def tabelle_update(self, fetch=None):
+    def tabelle_update(self, header='schueler'):
         try:
-            self.view.table.delete(*self.view.table.get_children())
-            if fetch is None:
+            if header == 'schueler':
+                fetch = self.model.ausgabe('projekte')
+            else:
                 fetch = self.model.ausgabe('schueler')
-            for t in fetch:
-                self.view.table.insert('', t[0], t[0], values=t)
+            for i in fetch:
+                self.view.table.tag_configure(i[0], background='white')
+
+            self.view.table.delete(*self.view.table.get_children())
+            fetch = self.model.ausgabe(header)
+            self.view.tabelle(fetch, header)
+            if header == 'schueler':
+                for ele in fetch:
+                    if ele[8] is None:
+                        self.view.table.tag_configure(ele[0], background='red')
+            else:
+                failed = self.model.prj_aktu()
+                for prj in failed:
+                    self.view.table.tag_configure(prj, background='red')
         except AttributeError:
             pass
 
@@ -195,6 +212,7 @@ class Controller(object):
 
         # reverse sort next time
         self.view.table.heading(col, command=lambda: self.tabelle_sorti(col, not descending))
+        self.tabelle_update()
 
     def hinzufugen(self):
         for entry in range(7):

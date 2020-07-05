@@ -10,8 +10,8 @@ import ttkthemes
 
 
 class View(ttkthemes.ThemedTk):
-    def __init__(self, imp, exp, bee, j5, j6, j7, j8, j9, j10, j11, j12, ja, tabsort, hin, zord, ande, scht, prjt, a1,
-                 a2, a3, a4, a5, a6, a7):
+    def __init__(self, imp, exp, bee, j5, j6, j7, j8, j9, j10, j11, j12, ja, tabsort, hin, zord, ande, scht,
+                 prjt, a1, a2, a3, a4, a5, a6, a7):
         # print(ttkthemes.THEMES)   # zum Ausgeben der verfügbaren Themes
         ttkthemes.ThemedTk.__init__(self, theme='breeze')
         self.title("Projektwochenverwaltungsprogramm")
@@ -39,6 +39,7 @@ class View(ttkthemes.ThemedTk):
                                    "Dritt Wunsch"),
                       'projekte': ("Name", "Jahrgang", "Nummer", "zugeordnete Schüler", "max Schüler"),
                       'jahrg': ('5', '6', '7', '8', '9', '10', '11', '12', 'Alle')}
+        self.width = {'schueler': [35, 121, 122, 50, 50, 100, 100, 100, 100], 'projekte': [35, 343, 75, 75, 150, 100]}
         self.labels = {}
         self.entrys = {}
         self.buttons = {}
@@ -54,9 +55,9 @@ class View(ttkthemes.ThemedTk):
             (None, "importieren", self.callback_imp,), (None, "exportieren", self.callback_exp,), ('-', None),
             (None, "beenden", self.callback_bee,))),
                    ('Schüler', ((None, "hinzufügen", self.schulerhin,), (None, "ändern", self.schuelerandern,))),
-                   ('Tools', ((None, "Schüler Projekten zuordnen", self.callback_prjt,),)),
+                   ('Tools', ((None, "Schüler Projekten zuordnen", self.callback_zord,),)),
                    ('Tabelle', (('.', "Schüler", self.callback_scht, self.vars['menu']),
-                                ('.', "Projekte", lambda fetch=self.callback_prjt: self.callback_scht(fetch),
+                                ('.', "Projekte", lambda head='projekte': self.callback_scht(head),
                                  self.vars['menu'])))))
         for i in range(len(self.names['jahrg'])):
             self.radios['jahrg-' + self.names['jahrg'][i]] = Radiobutton(self.rahmen[11], text=self.names['jahrg'][i],
@@ -99,16 +100,16 @@ class View(ttkthemes.ThemedTk):
             self.menus['main'].add_cascade(label=cas, menu=self.menus[cas])
         self.config(menu=self.menus['main'])
 
-    def tabelle(self, fetch):
-        width = [35, 75, 75, 50, 50, 100, 100, 100, 75]
+    def tabelle(self, fetch, header='schueler'):
         ml = ['ID']
-        for namen in self.names['schueler']:
-            ml.append(namen)
-        ml.append('Zugeordned zu')
+        for name in self.names[header]:
+            ml.append(name)
+        if header == 'schueler':
+            ml.append('Zugeordned zu')
         self.table['columns'] = ml
         self.table['show'] = 'headings'
         for i in range(len(ml)):
-            self.table.column(ml[i], width=width[i], minwidth=width[i])
+            self.table.column(ml[i], width=self.width[header][i], minwidth=self.width[header][i])
         for i in range(len(ml)):
             self.table.heading(ml[i], text=ml[i], command=lambda col=i: self.tabelle_sorti(col, False))
         for t in fetch:

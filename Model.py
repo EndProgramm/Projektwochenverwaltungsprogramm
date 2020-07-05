@@ -16,7 +16,8 @@ class Model(object):
         cursor = connection.cursor()
 
         # Tabellen erzeugen
-        sql = "CREATE TABLE projekte(pID INTEGER PRIMARY KEY, pName TEXT, pJahrg INTEGER, pNum INTEGER, pMaxS INTEGER)"
+        sql = "CREATE TABLE projekte(pID INTEGER PRIMARY KEY, pName TEXT, pJahrg INTEGER, pNum INTEGER, pS INTEGER, " \
+              "pMaxS INTEGER);"
         cursor.execute(sql)
 
         sql = "CREATE TABLE schueler(sID INTEGER PRIMARY KEY, sVName TEXT, sName TEXT, sJahrg INTEGER, sKla INTEGER, " \
@@ -222,6 +223,28 @@ class Model(object):
         con.close()
         return re, failedjahrg
 
+    def prj_aktu(self):
+        con = sqli.connect('pwvwp.db')
+        cur = con.cursor()
+
+        failed = []
+        for i in range(5, 13):
+            sql = "SELECT pID, pJahrg, pNum FROM projekte WHERE pJahrg = " + str(i) + ";"
+            cur.execute(sql)
+            prj = cur.fetchall()
+            for pid, jahrg, nr in prj:
+                sql = "SELECT COUNT(sID) FROM schueler WHERE sZu = " + str(nr) + " AND sJahrg = " + str(i) + ";"
+                cur.execute(sql)
+                erg = cur.fetchall()
+                if erg[0][0] < 5:
+                    failed.append(pid)
+                sql = "UPDATE projekte SET pS = '" + str(erg[0][0]) + "' WHERE pID = " + str(pid) + ";"
+                cur.execute(sql)
+
+        con.commit()
+        con.close()
+        return failed
+
     def einfuegen(self, tabelle, spalten_namen_tuple, value_tuple):
         con = sqli.connect('pwvwp.db')
         cur = con.cursor()
@@ -258,7 +281,7 @@ class Model(object):
     def ande(self, eigenschaft, eingabe, sID):
         con = sqli.connect('pwvwp.db')
         cur = con.cursor()
-        sql = "update schueler set " + eigenschaft + "='" + eingabe + "' where sID like '" + sID + "';"
+        sql = "UPDATE schueler SET " + eigenschaft + "= '" + eingabe + "' WHERE sID like '" + sID + "';"
         cur.execute(sql)
         con.commit()
         con.close()
