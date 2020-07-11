@@ -11,7 +11,8 @@ class Model(object):
         if not os.path.exists('pwvwp.db'):
             self.createDB()
 
-    def createDB(self):
+    @staticmethod
+    def createDB():
         connection = sqli.connect('pwvwp.db')
         cursor = connection.cursor()
 
@@ -27,7 +28,8 @@ class Model(object):
         connection.commit()
         connection.close()
 
-    def clearDB(self):
+    @staticmethod
+    def clearDB():
         con = sqli.connect('pwvwp.db')
         cur = con.cursor()
         sql = "Drop TABLE IF EXISTS projekte"
@@ -37,7 +39,8 @@ class Model(object):
         con.commit()
         con.close()
 
-    def importCSV(self, slcsv, plcsv, delis, delip):  # sl = schuelerliste, pl = projektliste
+    @staticmethod
+    def importCSV(slcsv, plcsv, delis, delip):  # sl = schuelerliste, pl = projektliste
         con = sqli.connect('pwvwp.db')
         cur = con.cursor()
 
@@ -74,7 +77,8 @@ class Model(object):
         except:
             return True
 
-    def exportCSV(self, slcsv, plcsv, delimiter):
+    @staticmethod
+    def exportCSV(slcsv, plcsv, delimiter):
         con = sqli.connect('pwvwp.db')
         cur = con.cursor()
 
@@ -108,7 +112,8 @@ class Model(object):
             plfile.writerow(spalte)
         con.close()
 
-    def zuordnen(self, wahl):
+    @staticmethod
+    def zuordnen(wahl):
         con = sqli.connect('pwvwp.db')
         cur = con.cursor()
         jahrg = 4  # Jahrgang
@@ -177,7 +182,8 @@ class Model(object):
         con.commit()
         con.close()
 
-    def restzuordnung(self):
+    @staticmethod
+    def restzuordnung():
         con = sqli.connect('pwvwp.db')
         cur = con.cursor()
 
@@ -223,7 +229,8 @@ class Model(object):
         con.close()
         return re, failedjahrg
 
-    def prj_aktu(self):
+    @staticmethod
+    def prj_aktu():
         con = sqli.connect('pwvwp.db')
         cur = con.cursor()
 
@@ -245,7 +252,8 @@ class Model(object):
         con.close()
         return failed
 
-    def einfuegen(self, tabelle, spalten_namen_tuple, value_tuple):
+    @staticmethod
+    def einfuegen(tabelle, spalten_namen_tuple, value_tuple):
         con = sqli.connect('pwvwp.db')
         cur = con.cursor()
         sql = "SELECT count(*) FROM " + tabelle + " WHERE "
@@ -278,7 +286,8 @@ class Model(object):
             con.close()
             return False
 
-    def ande(self, eigenschaft, eingabe, sID):
+    @staticmethod
+    def ande(eigenschaft, eingabe, sID):
         con = sqli.connect('pwvwp.db')
         cur = con.cursor()
         sql = "UPDATE schueler SET " + eigenschaft + "= '" + eingabe + "' WHERE sID like '" + sID + "';"
@@ -286,7 +295,8 @@ class Model(object):
         con.commit()
         con.close()
 
-    def ausgabe(self, tabelle):
+    @staticmethod
+    def ausgabe(tabelle):
         con = sqli.connect('pwvwp.db')
         cur = con.cursor()
 
@@ -297,7 +307,8 @@ class Model(object):
         con.close()
         return erg
 
-    def jahrgsuch(self, jahrgang):
+    @staticmethod
+    def jahrgsuch(jahrgang):
         con = sqli.connect('pwvwp.db')
         cur = con.cursor()
 
@@ -309,7 +320,8 @@ class Model(object):
         con.close()
         return erg
 
-    def ausfuhren(self, sql):
+    @staticmethod
+    def ausfuhren(sql):
         con = sqli.connect('pwvwp.db')
         cur = con.cursor()
 

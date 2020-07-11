@@ -3,26 +3,28 @@
 # Der Projektwochenmanager zum zuordnen aller Schüler zu Projekten
 
 from tkinter import *
-from tkinter import filedialog  # muss aus unbekannten Gründen extra importiert werden
-from tkinter.messagebox import *
 from tkinter.ttk import *
 import ttkthemes
 
 
 class View(ttkthemes.ThemedTk):
     def __init__(self, imp, exp, bee, j5, j6, j7, j8, j9, j10, j11, j12, ja, tabsort, hin, zord, ande, scht,
-                 prjt, a1, a2, a3, a4, a5, a6, a7):
+                 prjt, aktutable, a1, a2, a3, a4, a5, a6, a7):
         # print(ttkthemes.THEMES)   # zum Ausgeben der verfügbaren Themes
         ttkthemes.ThemedTk.__init__(self, theme='breeze')
         self.title("Projektwochenverwaltungsprogramm")
         self.geometry('800x300')
-        self.maxsize(800, 300)
         self.minsize(800, 300)
+        self.resizable(width=True, height=True)
 
         # Ttk Styles
-        self.styles = Style().configure('confirm', background='green')
-        self.styles = Style().configure('error', background='red')
-        self.styles = Style().configure('default', background='SystemButtonFace')
+        self.styles = Style()
+        self.styles.configure('confirm.TButton', background='green')
+        self.styles.configure('error.TButton', background='#fa6150')
+        self.styles.configure('default.TButton', background='SystemButtonFace')
+        self.styles.configure('confirm.TEntry', background='green')
+        self.styles.configure('error.TEntry', background='#fa6150')
+        self.styles.configure('default.TEntry', background='SystemButtonFace')
 
         # bestimmen der Callbacks
         self.callback_imp = imp
@@ -30,6 +32,7 @@ class View(ttkthemes.ThemedTk):
         self.callback_bee = bee
         self.radiocom = {'jahrg': [j5, j6, j7, j8, j9, j10, j11, j12, ja], 'ande': [a1, a2, a3, a4, a5, a6, a7]}
         self.tabelle_sorti = tabsort
+        self.callback_aktut = aktutable
         self.callback_zord = zord
         self.callback_hin = hin
         self.callback_ande = ande
@@ -43,37 +46,37 @@ class View(ttkthemes.ThemedTk):
         self.labels = {}
         self.entrys = {}
         self.buttons = {}
-        self.vars = {'jahrg': IntVar(), 'ande': IntVar(), 'menu': IntVar()}
+        self.vars = {'jahrg': IntVar(), 'ande': IntVar(), 'menu_t1': IntVar(), 'menu_t2': IntVar()}
         self.radios = {}
-        self.rahmen = {1: Frame(master=self), 2: Frame(master=self)}
-        self.rahmen.update({11: Frame(master=self.rahmen[1])})
+        self.rahmen = {1: Frame(self), 'popup_pro': Frame(self), 2: Frame(self)}
         self.fenster = {}
+        self.top = {}  # für spätere Toplevel 'fenster' bzw. widgets
 
         # erstellen des Menüs
         self.menus = {}
-        self.menu((('Datei', (
-            (None, "importieren", self.callback_imp,), (None, "exportieren", self.callback_exp,), ('-', None),
-            (None, "beenden", self.callback_bee,))),
+        self.menu((('Datei', ((None, "importieren", self.callback_imp,),
+                              (None, "exportieren", self.callback_exp,), ('-', None),
+                              (None, "beenden", self.callback_bee,))),
                    ('Schüler', ((None, "hinzufügen", self.schulerhin,), (None, "ändern", self.schuelerandern,))),
                    ('Tools', ((None, "Schüler Projekten zuordnen", self.callback_zord,),)),
-                   ('Tabelle', (('.', "Schüler", self.callback_scht, self.vars['menu']),
-                                ('.', "Projekte", lambda head='projekte': self.callback_scht(head),
-                                 self.vars['menu'])))))
+                   ('Tabellen', ((None, "Projekte tabelle öffnen",
+                                  lambda fetch=self.callback_prjt: self.prj_tabelle(fetch),),
+                                 ('-', None), (None, "aktualisieren", self.callback_aktut,)))))
         for i in range(len(self.names['jahrg'])):
-            self.radios['jahrg-' + self.names['jahrg'][i]] = Radiobutton(self.rahmen[11], text=self.names['jahrg'][i],
+            self.radios['jahrg-' + self.names['jahrg'][i]] = Radiobutton(self.rahmen[1], text=self.names['jahrg'][i],
                                                                          variable=self.vars['jahrg'], value=i,
                                                                          command=self.radiocom['jahrg'][i])
             self.radios['jahrg-' + self.names['jahrg'][i]].pack(side=LEFT)
         self.radios['jahrg-Alle'].invoke()
 
         # Tabelle
-        self.scrollbar = Scrollbar(self.rahmen[2], orient="vertical")
-        self.table = Treeview(self.rahmen[2], yscrollcommand=self.scrollbar.set)
-        self.scrollbar.pack(side=RIGHT, fill=Y)
+        self.scrollbars = {'main': Scrollbar(self.rahmen[2], orient="vertical")}
+        self.table = {'main': Treeview(self.rahmen[2], yscrollcommand=self.scrollbars['main'].set, height=200)}
+        self.scrollbars['main'].pack(side=RIGHT, fill=BOTH)
 
         self.rahmen[1].pack()
-        self.rahmen[2].pack(fill=X)
-        self.rahmen[11].pack(side=LEFT, fill=X)
+        self.rahmen['popup_pro'].pack(fill=X)
+        self.rahmen[2].pack(fill=BOTH, expand=True)
 
     def menu(self, menu):
         # angabe von Commands, normal ohne präfix. Bei Checkbox ']' und bei Radiobutton '.' als präfix.
@@ -100,22 +103,44 @@ class View(ttkthemes.ThemedTk):
             self.menus['main'].add_cascade(label=cas, menu=self.menus[cas])
         self.config(menu=self.menus['main'])
 
-    def tabelle(self, fetch, header='schueler'):
+    def shlr_tabelle(self, fetch):
         ml = ['ID']
-        for name in self.names[header]:
+        for name in self.names['schueler']:
             ml.append(name)
-        if header == 'schueler':
-            ml.append('Zugeordned zu')
-        self.table['columns'] = ml
-        self.table['show'] = 'headings'
+        ml.append('Zugeordned zu')
+        self.table['main']['columns'] = ml
+        self.table['main']['show'] = 'headings'
         for i in range(len(ml)):
-            self.table.column(ml[i], width=self.width[header][i], minwidth=self.width[header][i])
+            self.table['main'].column(ml[i], width=self.width['schueler'][i], minwidth=self.width['schueler'][i])
         for i in range(len(ml)):
-            self.table.heading(ml[i], text=ml[i], command=lambda col=i: self.tabelle_sorti(col, False))
+            self.table['main'].heading(ml[i], text=ml[i], command=lambda col=i: self.tabelle_sorti(col, False, 'main'))
         for t in fetch:
-            self.table.insert('', t[0], t[0], values=t, tags=t[0])
-        self.scrollbar.config(command=self.table.yview)
-        self.table.pack(fill=X)
+            self.table['main'].insert('', t[0], t[0], values=t)  # , tags=t[0]
+        self.scrollbars['main'].config(command=self.table['main'].yview)
+        self.table['main'].pack(fill=BOTH)
+
+    def prj_tabelle(self, fetch):
+        self.top['prjt'] = Toplevel()
+        self.top['prjt'].title('Projekte Liste')
+        self.top['prjt'].geometry('800x300')
+        self.top['prjt'].minsize(800, 300)
+        self.scrollbars['prj'] = Scrollbar(self.top['prjt'], orient="vertical")
+        self.table['prj'] = Treeview(self.top['prjt'], yscrollcommand=self.scrollbars['prj'].set, height=200)
+
+        ml = ['ID']
+        for name in self.names['projekte']:
+            ml.append(name)
+        self.table['prj']['columns'] = ml
+        self.table['prj']['show'] = 'headings'
+        for i in range(len(ml)):
+            self.table['prj'].column(ml[i], width=self.width['projekte'][i], minwidth=self.width['projekte'][i])
+        for i in range(len(ml)):
+            self.table['prj'].heading(ml[i], text=ml[i], command=lambda col=i: self.tabelle_sorti(col, False, 'prj'))
+        for t in fetch:
+            self.table['prj'].insert('', t[0], t[0], values=t)  # , tags=t[0]
+        self.scrollbars['prj'].config(command=self.table['prj'].yview)
+        self.scrollbars['prj'].pack(side=RIGHT, fill=BOTH)
+        self.table['prj'].pack(fill=BOTH)
 
     def schulerhin(self):
         self.fenster['hin'] = Tk()
@@ -135,7 +160,7 @@ class View(ttkthemes.ThemedTk):
             self.fenster['ande'].destroy()
         except KeyError:
             pass
-        self.fenster.update({'ande': Tk()})
+        self.fenster['ande'] = Tk()
         self.fenster['ande'].title("Schüler ändern")
         self.fenster['ande'].geometry('725x110')
 
@@ -171,33 +196,23 @@ class View(ttkthemes.ThemedTk):
         self.buttons['ande_B'] = Button(self.fenster['ande'], text="ändern", command=self.callback_ande)
         self.buttons['ande_B'].pack(fill=X, padx=8, pady=6)
 
-
-class Popup(ttkthemes.ThemedTk):
-    def __index__(self):
-        ttkthemes.ThemedTk.__init__(self, theme='breeze')
-        self.title("BLANK")
-        self.resizable(0, 0)
-
-        self.label = None
-        self.entry = None
-        self.button = None
-        self.rahmen = None
-
     def textentry(self, text, call_ok, call_cancel):
-        self.title('Aktion erforderlich!')
-        self.geometry("300x125")
-        self.label = Label(self, text=text, font=('Arial', 13), wraplength=275, anchor='center')
-        self.entry = Entry(self)
-        self.rahmen = Frame(self)
-        self.button = Button(self.rahmen, text='Ok', command=call_ok, width=10)
+        self.top['popup_ent'] = Toplevel()
+        self.top['popup_ent'].title('Aktion erforderlich!')
+        self.top['popup_ent'].geometry("300x125")
+        self.labels['popup_ent'] = Label(self.top['popup_ent'], text=text, font=('Arial', 13), wraplength=275,
+                                         anchor='center')
+        self.entrys['popup_ent'] = Entry(self.top['popup_ent'])
+        self.rahmen['popup_ent'] = Frame(self.top['popup_ent'])
+        self.buttons['popup_ent'] = Button(self.rahmen['popup_ent'], text='Ok', command=call_ok, width=10)
         # self.buttons['popup_Cancel'] = Button(self.rahmen['popup'], text='Cancel', command=call_cancel, width=10)
-        self.label.pack(fill=X)
-        self.entry.pack(pady=15)
-        self.rahmen.pack()
-        self.button.pack(side=LEFT)
+        self.labels['popup_ent'].pack(fill=X)
+        self.entrys['popup_ent'].pack(pady=8)
+        self.rahmen['popup_ent'].pack()
+        self.buttons['popup_ent'].pack(side=LEFT)
         # self.buttons['popup_Cancel'].pack(side=LEFT)
 
     def progressbar(self):
-        self.title('In Bearbeitung!')
-        self.label = Progressbar(self, orient='horizontal', length=250, mode='determinate')
-        self.label.pack()
+        self.labels['popup_pro'] = Progressbar(self.rahmen['popup_pro'], orient='horizontal', length=250,
+                                               mode='determinate')
+        self.labels['popup_pro'].pack(fill=X)

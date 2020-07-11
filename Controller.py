@@ -2,22 +2,21 @@
 # Autoren: Martin, Max, Vincent, Christoph, Lia; erstellt: 24.02.2020
 # Der Projektwochenmanager zum zuordnen aller Schüler zu Projekten
 
-import os, time
+import time, os
+from tkinter import filedialog  # muss aus unbekannten Gründen extra importiert werden
+from tkinter.messagebox import *
+
 from Model import *
 from View import *
-from tkinter import *
-from tkinter.messagebox import *
-from tkinter import filedialog  # muss aus unbekannten Gründen extra importiert werden
 
 
 class Controller(object):
     def __init__(self):
         self.model = Model()
         self.view = View(self.importieren, self.exportieren, self.beenden, self.J5, self.J6, self.J7, self.J8, self.J9,
-                         self.J10, self.J11, self.J12, self.tabelle_update, self.tabelle_sorti, self.hinzufugen,
-                         self.zuordnen, self.ande, self.tabelle_update, self.model.ausgabe('projekte'), self.a1,
-                         self.a2, self.a3, self.a4, self.a5, self.a6, self.a7)
-        self.popup = None
+                         self.J10, self.J11, self.J12, lambda: self.test, self.tabelle_sorti, self.hinzufugen,
+                         self.zuordnen, self.ande, lambda: self.test, self.model.ausgabe('projekte'),
+                         lambda: self.test, self.a1, self.a2, self.a3, self.a4, self.a5, self.a6, self.a7)
         self.wahlen = ('sErst', 'sZweit', 'sDritt')
         self.delimiter = {'imp_s': None, 'imp_p': None, 'exp': None}
         self.dchosen = None
@@ -27,7 +26,7 @@ class Controller(object):
         self.andernx = ""
 
         self.tabelle()
-        self.view.table.bind('<Double-Button-1>', self.treevent)
+        self.view.table['main'].bind('<Double-Button-1>', self.treevent)
         # Erstimportierung
         if self.model.ausgabe('schueler'):
             self.importieren(True)
@@ -35,78 +34,78 @@ class Controller(object):
         self.view.mainloop()
 
     def treevent(self, event):
-        if self.view.table.identify_region(event.x, event.y) == 'cell':
+        if self.view.table['main'].identify_region(event.x, event.y) == 'cell':
             self.view.schuelerandern()
             self.view.entrys['ande_Eid'].insert(0, event.widget.selection()[0])
 
     def zuordnen(self):
         if not self.double:
             self.double = True
-            self.popup = Popup()
-            self.popup.progressbar()
-            self.popup.label.step(1)
+            self.view.progressbar()
+            self.view.labels['popup_pro'].step(9)
 
             for wahl in self.wahlen:
                 self.model.zuordnen(wahl)
-                self.popup.label.step(30)
-                self.popup.update()
+                self.view.labels['popup_pro'].step(30)
+                self.view.update()
             erg = self.model.restzuordnung()
             if erg[0]:
                 showwarning('Fehler', 'In dem Jahrgang/den Jahrgängen ' + str(
                     erg[1]) + ' gibt es mehr Schüler als Plätze in den Kursen.')
-            self.popup.label.step(9)
-            self.popup.update()
+            self.view.labels['popup_pro'].step(1)
+            self.view.update()
             time.sleep(0.5)
-            self.tabelle_update()
-            self.view.vars['menu'].set(0)
-            self.popup.destroy()
+            self.test()
+            self.view.labels['popup_pro'].pack_forget()
             self.double = False
         else:
             showwarning('Doppelte Operation',
-                        'Es wird bereits eine Zuordnung durchgeführt, bitte warten Sie bis zur Vollendung dieser, bis Sie die nächste ausführen')
+                        'Es wird bereits eine Zuordnung durchgeführt, bitte warten Sie bis zur Vollendung dieser, '
+                        'bis Sie die nächste ausführen')
 
     def delimOK(self):
         if isinstance(self.dchosen, tuple):
             for d in self.dchosen:
-                self.delimiter[d] = self.popup.entry.get()
+                self.delimiter[d] = self.view.entrys['popup_ent'].get()
         else:
-            self.delimiter[self.dchosen] = self.popup.entry.get()
+            self.delimiter[self.dchosen] = self.view.entrys['popup_ent'].get()
         if self.delimiter == '' or len(self.delimiter[self.dchosen]) != 1:
             showwarning('Angabe ungültig', 'Das angegebene Trennzeichen ist ungültig oder es wurde keines Angegeben!'
                                            '\nBitte Geben Sie ein anderes Trennzeichen ein!')
             self.delimiterFester(None)
         else:
-            self.popup.destroy()
+            self.view.top['popup_ent'].destroy()
             self.dchosen = None
 
     def delimCanc(self):
-        self.popup.destroy()
+        self.view.top['popup_ent'].destroy()
 
     def delimiterFester(self, d):
-        self.popup = Popup()
         if isinstance(d, tuple):
             self.dchosen = list(self.delimiter.keys())[d[0]], list(self.delimiter.keys())[d[1]]
         elif self.dchosen is None:
             self.dchosen = list(self.delimiter.keys())[d]
         if d == 0:
-            self.popup.textentry('Bitte geben Sie das Trennzeichen der Schuelerlisten CSV-Datei an:', self.delimOK,
-                                 self.delimCanc)
+            self.view.textentry('Bitte geben Sie das Trennzeichen der Schuelerlisten CSV-Datei an:', self.delimOK,
+                                self.delimCanc)
         if d == 1:
-            self.popup.textentry('Bitte geben Sie das Trennzeichen der Projektlisten CSV-Datei an:', self.delimOK,
-                                 self.delimCanc)
+            self.view.textentry('Bitte geben Sie das Trennzeichen der Projektlisten CSV-Datei an:', self.delimOK,
+                                self.delimCanc)
         if d == 2:
-            self.popup.textentry('Bitte geben Sie das Trennzeichen der CSV-Dateien an:', self.delimOK,
-                                 self.delimCanc)
+            self.view.textentry('Bitte geben Sie das Trennzeichen der CSV-Dateien an:', self.delimOK,
+                                self.delimCanc)
         while self.dchosen is not None:
             try:
-                self.popup.update()
+                self.view.top['popup_ent'].update()
             except TclError:
                 return False
         return True
 
     def autoimport(self):
-        if os.path.exists('projektliste.csv') and os.path.exists('schuelerliste.csv') and askokcancel('Auto-import',
-                                                                                                      'Es wurden passende CSV-Dateien gefunden, wollen Sie diese jetzt importieren?'):
+        if os.path.exists('projektliste.csv') \
+                and os.path.exists('schuelerliste.csv') and askokcancel('Auto-import', 'Es wurden passende CSV-Dateien '
+                                                                                       'gefunden, wollen Sie diese '
+                                                                                       'jetzt importieren?'):
             self.slcsv = 'schuelerliste.csv'
             self.plcsv = 'projektliste.csv'
         else:
@@ -124,7 +123,6 @@ class Controller(object):
     def importieren(self, erstes=False):
         if not bool(self.model.ausgabe('schueler')):
             self.autoimport()
-
         elif not erstes and askyesno('Bereits importiert', 'Es sind bereits CSV-Dateien importiert, wollen sie diese '
                                                            'überschreiben?'):
             self.model.clearDB()
@@ -140,22 +138,22 @@ class Controller(object):
                                                         filetypes=(("CSV Datei", "*.csv"), ("all files", "*.*")))
         self.csvimport()
 
-        if not bool(self.view.table.get_children()):
+        if not bool(self.view.table['main'].get_children()):
             self.tabelle()
         else:
-            self.tabelle_update()
+            self.test()
 
     def exportieren(self):
         slcsv = filedialog.asksaveasfilename(title='Schülerliste exportieren', defaultextension=".csv",
                                              initialfile='schuelerl_fertig',
                                              filetypes=(("CSV Datei", "*.csv"), ("Txt Datei", "*.txt"),
                                                         ("all files", "*.*")))
-        if slcsv is not '':
+        if slcsv != '':
             plcsv = filedialog.asksaveasfilename(title='Projektliste exportieren', defaultextension=".csv",
                                                  initialfile='projektel_fertig',
                                                  filetypes=(("CSV Datei", "*.csv"), ("Txt Datei", "*.txt"),
                                                             ("all files", "*.*")))
-            if plcsv is not '':
+            if plcsv != '':
                 if self.delimiterFester(2):
                     self.model.exportCSV(slcsv, plcsv, self.delimiter['exp'])
                     showinfo('Exportiert', "Die Tabellen wurden in zwei CSV-Dateien mit '" + self.delimiter['exp'] +
@@ -168,37 +166,98 @@ class Controller(object):
         if x:
             self.view.destroy()
 
-    def tabelle(self, fetch=None):
-        if fetch is None:
-            fetch = self.model.ausgabe('schueler')
-        self.view.tabelle(fetch)
-        self.tabelle_update()
+    def tabelle(self):
+        fetch = self.model.ausgabe('schueler')
+        self.view.shlr_tabelle(fetch)
 
-    def tabelle_update(self, header='schueler'):
+    def test(self, fetchshlr=None):
+        if fetchshlr is not None:
+            fetchprj = self.model.ausgabe('projekte')
+        else:
+            fetchshlr = self.model.ausgabe('schueler')
+            fetchprj = self.model.ausgabe('projekte')
+
+        for i in fetchshlr:
+            self.view.table['main'].tag_configure(i[0], background='white')
+        self.view.table['main'].delete(*self.view.table['main'].get_children())
+
+        for t in fetchshlr:
+            self.view.table['main'].insert('', t[0], t[0], values=t)  # , tags=t[0]
+
+        for ele in fetchshlr:
+            if ele[8] is None:
+                self.view.table['main'].tag_configure(ele[0], background='#fa6150')
+
         try:
-            if header == 'schueler':
-                fetch = self.model.ausgabe('projekte')
-            else:
-                fetch = self.model.ausgabe('schueler')
-            for i in fetch:
-                self.view.table.tag_configure(i[0], background='white')
+            for i in fetchprj:
+                self.view.table['prj'].tag_configure(i[0], background='white')
+            self.view.table['prj'].delete(*self.view.table['prj'].get_children())
 
-            self.view.table.delete(*self.view.table.get_children())
-            fetch = self.model.ausgabe(header)
-            self.view.tabelle(fetch, header)
-            if header == 'schueler':
-                for ele in fetch:
-                    if ele[8] is None:
-                        self.view.table.tag_configure(ele[0], background='red')
-            else:
-                failed = self.model.prj_aktu()
-                for prj in failed:
-                    self.view.table.tag_configure(prj, background='red')
-        except AttributeError:
+            for t in fetchprj:
+                self.view.table['prj'].insert('', t[0], t[0], values=t)  # , tags=t[0]
+
+            failed = self.model.prj_aktu()
+            for prj in failed:
+                self.view.table['prj'].tag_configure(prj, background='#fa6150')
+        except KeyError:
             pass
 
-    def tabelle_sorti(self, col, descending):
-        data = [(self.view.table.set(tvindex, col), tvindex) for tvindex in self.view.table.get_children('')]
+    def tabelle_update(self, fetchshlr=None):
+        if fetchshlr is not None:
+            fetchprj = self.model.ausgabe('projekte')
+        else:
+            fetchshlr = self.model.ausgabe('schueler')
+            fetchprj = self.model.ausgabe('projekte')
+
+        for i in fetchshlr:
+            self.view.table['main'].tag_configure(i[0], background='white')
+        self.view.table['main'].delete(*self.view.table['main'].get_children())
+
+        for t in fetchshlr:
+            self.view.table['main'].insert('', t[0], t[0], values=t)  # , tags=t[0]
+
+        for ele in fetchshlr:
+            if ele[8] is None:
+                self.view.table['main'].tag_configure(ele[0], background='#fa6150')
+
+        try:
+            for i in fetchprj:
+                self.view.table['prj'].tag_configure(i[0], background='white')
+            self.view.table['prj'].delete(*self.view.table['prj'].get_children())
+
+            for t in fetchprj:
+                self.view.table['prj'].insert('', t[0], t[0], values=t)  # , tags=t[0]
+
+            failed = self.model.prj_aktu()
+            for prj in failed:
+                self.view.table['prj'].tag_configure(prj, background='#fa6150')
+        except KeyError:
+            pass
+        # try:
+        #     if header == 'schueler':
+        #         fetch = self.model.ausgabe('projekte')
+        #     else:
+        #         fetch = self.model.ausgabe('schueler')
+        #     for i in fetch:
+        #         self.view.table[tabelle].tag_configure(i[0], background='white')
+        #
+        #     self.view.table[tabelle].delete(*self.view.table[tabelle].get_children())
+        #     fetch = self.model.ausgabe(header)
+        #     self.view.tabelle(fetch, header)
+        #     if header == 'schueler':
+        #         for ele in fetch:
+        #             if ele[8] is None:
+        #                 self.view.table[tabelle].tag_configure(ele[0], background='#fa6150')
+        #     else:
+        #         failed = self.model.prj_aktu()
+        #         for prj in failed:
+        #             self.view.table[tabelle].tag_configure(prj, background='#fa6150')
+        # except AttributeError:
+        #     pass
+
+    def tabelle_sorti(self, col, descending, tabelle):
+        data = [(self.view.table[tabelle].set(tvindex, col), tvindex) for tvindex in
+                self.view.table[tabelle].get_children('')]
 
         try:
             data = [(float(element), tvindex) for element, tvindex in data]
@@ -208,11 +267,11 @@ class Controller(object):
         data.sort(reverse=descending)
 
         for index, (val, k) in enumerate(data):
-            self.view.table.move(k, '', index)
+            self.view.table[tabelle].move(k, '', index)
 
         # reverse sort next time
-        self.view.table.heading(col, command=lambda: self.tabelle_sorti(col, not descending))
-        self.tabelle_update()
+        self.view.table[tabelle].heading(col, command=lambda: self.tabelle_sorti(col, not descending, tabelle))
+        self.test()
 
     def hinzufugen(self):
         for entry in range(7):
@@ -233,27 +292,27 @@ class Controller(object):
                                      self.view.entrys[3].get(), erst, zweit, dritt)):
                 for entry in range(7):
                     self.view.entrys[entry].delete(0, END)
-                self.view.buttons['hin'].configure('confirm')
+                self.view.buttons['hin'].configure('confirm.TButton')
             else:
                 showerror('Fehler', 'Schüler bereits vorhanden!')
             for entry in range(7):
                 self.view.entrys[entry].delete(0, END)
-                self.view.entrys[entry].configure('default')
+                self.view.entrys[entry].configure('default.TEntry')
         else:
-            self.view.buttons['hin'].configure('error')
+            self.view.buttons['hin'].configure(style='error.TButton')
             for i in range(4):
-                self.view.entrys[i].configure('default')
+                self.view.entrys[i].configure(style='default.TEntry')
                 if self.view.entrys[i].get() == "":
-                    self.view.entrys[i].configure('error')
-        self.view.update()
+                    self.view.entrys[i].configure(style='error.TEntry')
+        self.view.fenster['hin'].update()
         time.sleep(0.3)
-        self.view.buttons['hin'].configure('default')
-        self.tabelle_update()
+        self.view.buttons['hin'].configure(style='default.TButton')
+        self.test()
 
     def ande(self):
         if self.andernx != "" and self.view.entrys['ande_Eid'].get() != "":
             self.model.ande(self.andernx, self.view.entrys['ande_Eandern'].get(), self.view.entrys['ande_Eid'].get())
-            self.tabelle_update()
+            self.test()
             self.view.fenster['ande'].destroy()
 
     def J5(self):
@@ -300,9 +359,6 @@ class Controller(object):
 
     def a7(self):
         self.andernx = "sDritt"
-
-    def unreif(self):
-        showwarning('Noch nicht ausgereift', 'Dieser Teil wurde noch nicht Programmiert')
 
 
 c = Controller()
