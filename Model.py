@@ -17,7 +17,7 @@ class Model(object):
         cursor = connection.cursor()
 
         # Tabellen erzeugen
-        sql = "CREATE TABLE projekte(pID INTEGER PRIMARY KEY, pName TEXT, pJahrg INTEGER, pNum INTEGER, pS INTEGER, " \
+        sql = "CREATE TABLE projekte(pID INTEGER PRIMARY KEY, pName TEXT, sJahrg INTEGER, pNum INTEGER, pS INTEGER, " \
               "pMaxS INTEGER);"
         cursor.execute(sql)
 
@@ -63,18 +63,18 @@ class Model(object):
             file = open(plcsv, 'r')
             read = csv.reader(file, delimiter=delip)
             for row in read:
-                sql = "SELECT COUNT(*) FROM projekte WHERE pName = '" + row[0] + "' AND pJahrg = '" + row[1] + "';"
+                sql = "SELECT COUNT(*) FROM projekte WHERE pName = '" + row[0] + "' AND sJahrg = '" + row[1] + "';"
                 cur.execute(sql)
                 test = cur.fetchall()
                 if not test[0][0]:
-                    sql = "INSERT INTO projekte(pName, pJahrg, pNum, pMaxS) VALUES('" + row[0] + "', '" + row[
+                    sql = "INSERT INTO projekte(pName, sJahrg, pNum, pMaxS) VALUES('" + row[0] + "', '" + row[
                         1] + "', '" + \
                           row[2] + "', '" + row[3] + "');"
                     cur.execute(sql)
             con.commit()
             con.close()
             return False
-        except:
+        except KeyError:
             return True
 
     @staticmethod
@@ -121,7 +121,7 @@ class Model(object):
             jahrg += 1
             b = 1  # Projekt
             sql = "select max(pNum) FROM projekte WHERE '" + str(
-                jahrg) + "' like pJahrg;"  # max Projektnummer wird ermittelt
+                jahrg) + "' like sJahrg;"  # max Projektnummer wird ermittelt
             cur.execute(sql)
             x = cur.fetchall()  # max Projektnummer
             xx = x[0][0]
@@ -148,7 +148,7 @@ class Model(object):
                         ff = f[0][0]
                         liste.append(ff)
                     y += 1
-                sql = "select pMaxS FROM projekte WHERE '" + str(jahrg) + "' like pJahrg and '" + str(
+                sql = "select pMaxS FROM projekte WHERE '" + str(jahrg) + "' like sJahrg and '" + str(
                     b) + "' like pNum;"
                 cur.execute(sql)
                 maxanz0 = cur.fetchall()
@@ -191,14 +191,14 @@ class Model(object):
         check = []
         while jahrg <= 11:
             jahrg += 1
-            sql = "select pNum from projekte WHERE '" + str(jahrg) + "' like pJahrg"
+            sql = "select pNum from projekte WHERE '" + str(jahrg) + "' like sJahrg"
             cur.execute(sql)
             projekte = cur.fetchall()
             sql = "select sID from schueler WHERE '" + str(jahrg) + "' like sJahrg and sZu is NULL"
             cur.execute(sql)
             schuler = cur.fetchall()
             while len(schuler) > 0 and len(projekte) > 0:
-                sql = "select pMaxS from projekte WHERE '" + str(jahrg) + "' like pJahrg and '" + str(
+                sql = "select pMaxS from projekte WHERE '" + str(jahrg) + "' like sJahrg and '" + str(
                     projekte[0][0]) + "' like pNum"
                 cur.execute(sql)
                 maxanz0 = cur.fetchall()
@@ -236,7 +236,7 @@ class Model(object):
 
         failed = []
         for i in range(5, 13):
-            sql = "SELECT pID, pJahrg, pNum FROM projekte WHERE pJahrg = " + str(i) + ";"
+            sql = "SELECT pID, sJahrg, pNum FROM projekte WHERE sJahrg = " + str(i) + ";"
             cur.execute(sql)
             prj = cur.fetchall()
             for pid, jahrg, nr in prj:
@@ -308,12 +308,11 @@ class Model(object):
         return erg
 
     @staticmethod
-    def jahrgsuch(jahrgang):
+    def jahrgsuch(tabelle, jahrgang):
         con = sqli.connect('pwvwp.db')
         cur = con.cursor()
 
-        sql = "SELECT * FROM schueler WHERE sJahrg LIKE '" + str(
-            jahrgang) + "'"
+        sql = "SELECT * FROM " + tabelle + " WHERE sJahrg LIKE '" + str(jahrgang) + "'"
         cur.execute(sql)
         erg = cur.fetchall()
 

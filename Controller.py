@@ -13,10 +13,11 @@ from View import *
 class Controller(object):
     def __init__(self):
         self.model = Model()
-        self.view = View(self.importieren, self.exportieren, self.beenden, self.J5, self.J6, self.J7, self.J8, self.J9,
-                         self.J10, self.J11, self.J12, lambda: self.test, self.tabelle_sorti, self.hinzufugen,
-                         self.zuordnen, self.ande, lambda: self.test, self.model.ausgabe('projekte'),
-                         lambda: self.test, self.a1, self.a2, self.a3, self.a4, self.a5, self.a6, self.a7)
+        self.view = View(self.run, self.importieren, self.exportieren, self.beenden, self.J5, self.J6, self.J7, self.J8,
+                         self.J9,
+                         self.J10, self.J11, self.J12, self.tabellen_update, self.tabelle_sorti, self.hinzufugen,
+                         self.zuordnen, self.ande, self.tabellen_update, self.tabelle_prj,
+                         self.tabellen_update, self.a1, self.a2, self.a3, self.a4, self.a5, self.a6, self.a7)
         self.wahlen = ('sErst', 'sZweit', 'sDritt')
         self.delimiter = {'imp_s': None, 'imp_p': None, 'exp': None}
         self.dchosen = None
@@ -25,6 +26,7 @@ class Controller(object):
         self.double = False
         self.andernx = ""
 
+        self.view.radios['jahrg-Alle'].invoke()
         self.tabelle()
         self.view.table['main'].bind('<Double-Button-1>', self.treevent)
         # Erstimportierung
@@ -55,7 +57,7 @@ class Controller(object):
             self.view.labels['popup_pro'].step(1)
             self.view.update()
             time.sleep(0.5)
-            self.test()
+            self.tabellen_update()
             self.view.labels['popup_pro'].pack_forget()
             self.double = False
         else:
@@ -141,7 +143,7 @@ class Controller(object):
         if not bool(self.view.table['main'].get_children()):
             self.tabelle()
         else:
-            self.test()
+            self.tabellen_update()
 
     def exportieren(self):
         slcsv = filedialog.asksaveasfilename(title='Schülerliste exportieren', defaultextension=".csv",
@@ -169,16 +171,24 @@ class Controller(object):
     def tabelle(self):
         fetch = self.model.ausgabe('schueler')
         self.view.shlr_tabelle(fetch)
+        self.tabellen_update()
 
-    def test(self, fetchshlr=None):
-        if fetchshlr is not None:
-            fetchprj = self.model.ausgabe('projekte')
-        else:
+    def tabelle_prj(self):
+        fetch = self.model.ausgabe('projekte')
+        self.view.prj_tabelle(fetch)
+        self.tabellen_update()
+
+    def tabellen_update(self, fetchshlr=None, fetchprj=None):
+        if fetchshlr is None:
             fetchshlr = self.model.ausgabe('schueler')
+        if fetchprj is None:
             fetchprj = self.model.ausgabe('projekte')
 
-        for i in fetchshlr:
-            self.view.table['main'].tag_configure(i[0], background='white')
+        try:
+            for i in fetchshlr:
+                self.view.table['main'].item(i[0], tags='red')
+        except TclError:
+            pass
         self.view.table['main'].delete(*self.view.table['main'].get_children())
 
         for t in fetchshlr:
@@ -186,11 +196,14 @@ class Controller(object):
 
         for ele in fetchshlr:
             if ele[8] is None:
-                self.view.table['main'].tag_configure(ele[0], background='#fa6150')
+                self.view.table['main'].item(ele[0], tags='red')
 
         try:
             for i in fetchprj:
-                self.view.table['prj'].tag_configure(i[0], background='white')
+                try:
+                    self.view.table['prj'].item(i[0], tags='white')
+                except TclError:
+                    pass
             self.view.table['prj'].delete(*self.view.table['prj'].get_children())
 
             for t in fetchprj:
@@ -198,62 +211,12 @@ class Controller(object):
 
             failed = self.model.prj_aktu()
             for prj in failed:
-                self.view.table['prj'].tag_configure(prj, background='#fa6150')
+                try:
+                    self.view.table['prj'].item(prj, tags='red')
+                except TclError:
+                    pass
         except KeyError:
             pass
-
-    def tabelle_update(self, fetchshlr=None):
-        if fetchshlr is not None:
-            fetchprj = self.model.ausgabe('projekte')
-        else:
-            fetchshlr = self.model.ausgabe('schueler')
-            fetchprj = self.model.ausgabe('projekte')
-
-        for i in fetchshlr:
-            self.view.table['main'].tag_configure(i[0], background='white')
-        self.view.table['main'].delete(*self.view.table['main'].get_children())
-
-        for t in fetchshlr:
-            self.view.table['main'].insert('', t[0], t[0], values=t)  # , tags=t[0]
-
-        for ele in fetchshlr:
-            if ele[8] is None:
-                self.view.table['main'].tag_configure(ele[0], background='#fa6150')
-
-        try:
-            for i in fetchprj:
-                self.view.table['prj'].tag_configure(i[0], background='white')
-            self.view.table['prj'].delete(*self.view.table['prj'].get_children())
-
-            for t in fetchprj:
-                self.view.table['prj'].insert('', t[0], t[0], values=t)  # , tags=t[0]
-
-            failed = self.model.prj_aktu()
-            for prj in failed:
-                self.view.table['prj'].tag_configure(prj, background='#fa6150')
-        except KeyError:
-            pass
-        # try:
-        #     if header == 'schueler':
-        #         fetch = self.model.ausgabe('projekte')
-        #     else:
-        #         fetch = self.model.ausgabe('schueler')
-        #     for i in fetch:
-        #         self.view.table[tabelle].tag_configure(i[0], background='white')
-        #
-        #     self.view.table[tabelle].delete(*self.view.table[tabelle].get_children())
-        #     fetch = self.model.ausgabe(header)
-        #     self.view.tabelle(fetch, header)
-        #     if header == 'schueler':
-        #         for ele in fetch:
-        #             if ele[8] is None:
-        #                 self.view.table[tabelle].tag_configure(ele[0], background='#fa6150')
-        #     else:
-        #         failed = self.model.prj_aktu()
-        #         for prj in failed:
-        #             self.view.table[tabelle].tag_configure(prj, background='#fa6150')
-        # except AttributeError:
-        #     pass
 
     def tabelle_sorti(self, col, descending, tabelle):
         data = [(self.view.table[tabelle].set(tvindex, col), tvindex) for tvindex in
@@ -271,7 +234,6 @@ class Controller(object):
 
         # reverse sort next time
         self.view.table[tabelle].heading(col, command=lambda: self.tabelle_sorti(col, not descending, tabelle))
-        self.test()
 
     def hinzufugen(self):
         for entry in range(7):
@@ -307,37 +269,37 @@ class Controller(object):
         self.view.fenster['hin'].update()
         time.sleep(0.3)
         self.view.buttons['hin'].configure(style='default.TButton')
-        self.test()
+        self.tabellen_update()
 
     def ande(self):
         if self.andernx != "" and self.view.entrys['ande_Eid'].get() != "":
             self.model.ande(self.andernx, self.view.entrys['ande_Eandern'].get(), self.view.entrys['ande_Eid'].get())
-            self.test()
+            self.tabellen_update()
             self.view.fenster['ande'].destroy()
 
     def J5(self):
-        self.tabelle_update(self.model.jahrgsuch(5))
+        self.tabellen_update(self.model.jahrgsuch('schueler', 5), self.model.jahrgsuch('projekte', 5))
 
     def J6(self):
-        self.tabelle_update(self.model.jahrgsuch(6))
+        self.tabellen_update(self.model.jahrgsuch('schueler', 6), self.model.jahrgsuch('projekte', 6))
 
     def J7(self):
-        self.tabelle_update(self.model.jahrgsuch(7))
+        self.tabellen_update(self.model.jahrgsuch('schueler', 7), self.model.jahrgsuch('projekte', 7))
 
     def J8(self):
-        self.tabelle_update(self.model.jahrgsuch(8))
+        self.tabellen_update(self.model.jahrgsuch('schueler', 8), self.model.jahrgsuch('projekte', 8))
 
     def J9(self):
-        self.tabelle_update(self.model.jahrgsuch(9))
+        self.tabellen_update(self.model.jahrgsuch('schueler', 9), self.model.jahrgsuch('projekte', 9))
 
     def J10(self):
-        self.tabelle_update(self.model.jahrgsuch(10))
+        self.tabellen_update(self.model.jahrgsuch('schueler', 10), self.model.jahrgsuch('projekte', 10))
 
     def J11(self):
-        self.tabelle_update(self.model.jahrgsuch(11))
+        self.tabellen_update(self.model.jahrgsuch('schueler', 11), self.model.jahrgsuch('projekte', 11))
 
     def J12(self):
-        self.tabelle_update(self.model.jahrgsuch(12))
+        self.tabellen_update(self.model.jahrgsuch('schueler', 12), self.model.jahrgsuch('projekte', 12))
 
     def a1(self):
         self.andernx = "sVName"
@@ -360,5 +322,7 @@ class Controller(object):
     def a7(self):
         self.andernx = "sDritt"
 
+    def run(self):
+        pass
 
 c = Controller()

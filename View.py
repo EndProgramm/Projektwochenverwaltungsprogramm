@@ -8,7 +8,7 @@ import ttkthemes
 
 
 class View(ttkthemes.ThemedTk):
-    def __init__(self, imp, exp, bee, j5, j6, j7, j8, j9, j10, j11, j12, ja, tabsort, hin, zord, ande, scht,
+    def __init__(self, run, imp, exp, bee, j5, j6, j7, j8, j9, j10, j11, j12, ja, tabsort, hin, zord, ande, scht,
                  prjt, aktutable, a1, a2, a3, a4, a5, a6, a7):
         # print(ttkthemes.THEMES)   # zum Ausgeben der verfügbaren Themes
         ttkthemes.ThemedTk.__init__(self, theme='breeze')
@@ -27,6 +27,7 @@ class View(ttkthemes.ThemedTk):
         self.styles.configure('default.TEntry', background='SystemButtonFace')
 
         # bestimmen der Callbacks
+        self.callback_run = run
         self.callback_imp = imp
         self.callback_exp = exp
         self.callback_bee = bee
@@ -59,15 +60,14 @@ class View(ttkthemes.ThemedTk):
                               (None, "beenden", self.callback_bee,))),
                    ('Schüler', ((None, "hinzufügen", self.schulerhin,), (None, "ändern", self.schuelerandern,))),
                    ('Tools', ((None, "Schüler Projekten zuordnen", self.callback_zord,),)),
-                   ('Tabellen', ((None, "Projekte tabelle öffnen",
-                                  lambda fetch=self.callback_prjt: self.prj_tabelle(fetch),),
-                                 ('-', None), (None, "aktualisieren", self.callback_aktut,)))))
+                   ('Tabellen', ((None, "Projekte tabelle öffnen", self.callback_prjt,),
+                                 ('-', None), (None, "aktualisieren", self.callback_aktut,))),
+                   ('Run', ((None, 'run', self.callback_run,),))))
         for i in range(len(self.names['jahrg'])):
             self.radios['jahrg-' + self.names['jahrg'][i]] = Radiobutton(self.rahmen[1], text=self.names['jahrg'][i],
                                                                          variable=self.vars['jahrg'], value=i,
                                                                          command=self.radiocom['jahrg'][i])
             self.radios['jahrg-' + self.names['jahrg'][i]].pack(side=LEFT)
-        self.radios['jahrg-Alle'].invoke()
 
         # Tabelle
         self.scrollbars = {'main': Scrollbar(self.rahmen[2], orient="vertical")}
@@ -103,6 +103,15 @@ class View(ttkthemes.ThemedTk):
             self.menus['main'].add_cascade(label=cas, menu=self.menus[cas])
         self.config(menu=self.menus['main'])
 
+    def tabletags(self):
+        self.table['main'].tag_configure('red', background='#fa6150')
+        self.table['main'].tag_configure('white', background='white')
+        try:
+            self.table['prj'].tag_configure('red', background='#fa6150')
+            self.table['prj'].tag_configure('white', background='white')
+        except KeyError:
+            pass
+
     def shlr_tabelle(self, fetch):
         ml = ['ID']
         for name in self.names['schueler']:
@@ -114,10 +123,13 @@ class View(ttkthemes.ThemedTk):
             self.table['main'].column(ml[i], width=self.width['schueler'][i], minwidth=self.width['schueler'][i])
         for i in range(len(ml)):
             self.table['main'].heading(ml[i], text=ml[i], command=lambda col=i: self.tabelle_sorti(col, False, 'main'))
+
+        self.table['main'].delete(*self.table['main'].get_children())
         for t in fetch:
             self.table['main'].insert('', t[0], t[0], values=t)  # , tags=t[0]
         self.scrollbars['main'].config(command=self.table['main'].yview)
         self.table['main'].pack(fill=BOTH)
+        self.tabletags()
 
     def prj_tabelle(self, fetch):
         self.top['prjt'] = Toplevel()
@@ -136,11 +148,14 @@ class View(ttkthemes.ThemedTk):
             self.table['prj'].column(ml[i], width=self.width['projekte'][i], minwidth=self.width['projekte'][i])
         for i in range(len(ml)):
             self.table['prj'].heading(ml[i], text=ml[i], command=lambda col=i: self.tabelle_sorti(col, False, 'prj'))
+
+        self.table['prj'].delete(*self.table['prj'].get_children())
         for t in fetch:
             self.table['prj'].insert('', t[0], t[0], values=t)  # , tags=t[0]
         self.scrollbars['prj'].config(command=self.table['prj'].yview)
         self.scrollbars['prj'].pack(side=RIGHT, fill=BOTH)
         self.table['prj'].pack(fill=BOTH)
+        self.tabletags()
 
     def schulerhin(self):
         self.fenster['hin'] = Tk()
