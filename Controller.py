@@ -13,11 +13,14 @@ from View import *
 class Controller(object):
     def __init__(self):
         self.model = Model()
-        self.view = View(self.run, self.importieren, self.exportieren, self.beenden, self.J5, self.J6, self.J7, self.J8,
-                         self.J9,
-                         self.J10, self.J11, self.J12, self.tabellen_update, self.tabelle_sorti, self.hinzufugen,
-                         self.zuordnen, self.ande, self.tabellen_update, self.tabelle_prj,
-                         self.tabellen_update, self.a1, self.a2, self.a3, self.a4, self.a5, self.a6, self.a7)
+        self.view = View(self.run, self.importieren, self.exportieren, self.beenden,
+                         (self.J5, self.J6, self.J7, self.J8,
+                          self.J9, self.J10, self.J11, self.J12, self.tabelle_shlrUpdate),
+                         (self.J5_prj, self.J6_prj, self.J7_prj, self.J8_prj, self.J9_prj, self.J10_prj, self.J11_prj,
+                          self.J12_prj, self.tabelle_prjUpdate),
+                         self.tabelle_sorti, self.hinzufugen, self.zuordnen, self.ande, self.tabellen_update,
+                         self.tabelle_prj, self.tabellen_update, (self.a1, self.a2, self.a3, self.a4, self.a5, self.a6,
+                                                                  self.a7))
         self.wahlen = ('sErst', 'sZweit', 'sDritt')
         self.delimiter = {'imp_s': None, 'imp_p': None, 'exp': None}
         self.dchosen = None
@@ -179,10 +182,12 @@ class Controller(object):
         self.tabellen_update()
 
     def tabellen_update(self, fetchshlr=None, fetchprj=None):
+        self.tabelle_shlrUpdate(fetchshlr)
+        self.tabelle_prjUpdate(fetchprj)
+
+    def tabelle_shlrUpdate(self, fetchshlr=None):
         if fetchshlr is None:
             fetchshlr = self.model.ausgabe('schueler')
-        if fetchprj is None:
-            fetchprj = self.model.ausgabe('projekte')
 
         try:
             for i in fetchshlr:
@@ -197,6 +202,10 @@ class Controller(object):
         for ele in fetchshlr:
             if ele[8] is None:
                 self.view.table['main'].item(ele[0], tags='red')
+
+    def tabelle_prjUpdate(self, fetchprj=None):
+        if fetchprj is None:
+            fetchprj = self.model.ausgabe('projekte')
 
         try:
             for i in fetchprj:
@@ -278,28 +287,52 @@ class Controller(object):
             self.view.fenster['ande'].destroy()
 
     def J5(self):
-        self.tabellen_update(self.model.jahrgsuch('schueler', 5), self.model.jahrgsuch('projekte', 5))
+        self.tabelle_shlrUpdate(self.model.jahrgsuch('schueler', 5))
 
     def J6(self):
-        self.tabellen_update(self.model.jahrgsuch('schueler', 6), self.model.jahrgsuch('projekte', 6))
+        self.tabelle_shlrUpdate(self.model.jahrgsuch('schueler', 6))
 
     def J7(self):
-        self.tabellen_update(self.model.jahrgsuch('schueler', 7), self.model.jahrgsuch('projekte', 7))
+        self.tabelle_shlrUpdate(self.model.jahrgsuch('schueler', 7))
 
     def J8(self):
-        self.tabellen_update(self.model.jahrgsuch('schueler', 8), self.model.jahrgsuch('projekte', 8))
+        self.tabelle_shlrUpdate(self.model.jahrgsuch('schueler', 8))
 
     def J9(self):
-        self.tabellen_update(self.model.jahrgsuch('schueler', 9), self.model.jahrgsuch('projekte', 9))
+        self.tabelle_shlrUpdate(self.model.jahrgsuch('schueler', 9))
 
     def J10(self):
-        self.tabellen_update(self.model.jahrgsuch('schueler', 10), self.model.jahrgsuch('projekte', 10))
+        self.tabelle_shlrUpdate(self.model.jahrgsuch('schueler', 10))
 
     def J11(self):
-        self.tabellen_update(self.model.jahrgsuch('schueler', 11), self.model.jahrgsuch('projekte', 11))
+        self.tabelle_shlrUpdate(self.model.jahrgsuch('schueler', 11))
 
     def J12(self):
-        self.tabellen_update(self.model.jahrgsuch('schueler', 12), self.model.jahrgsuch('projekte', 12))
+        self.tabelle_shlrUpdate(self.model.jahrgsuch('schueler', 12))
+
+    def J5_prj(self):
+        self.tabelle_prjUpdate(self.model.jahrgsuch('projekte', 5))
+
+    def J6_prj(self):
+        self.tabelle_prjUpdate(self.model.jahrgsuch('projekte', 6))
+
+    def J7_prj(self):
+        self.tabelle_prjUpdate(self.model.jahrgsuch('projekte', 7))
+
+    def J8_prj(self):
+        self.tabelle_prjUpdate(self.model.jahrgsuch('projekte', 8))
+
+    def J9_prj(self):
+        self.tabelle_prjUpdate(self.model.jahrgsuch('projekte', 9))
+
+    def J10_prj(self):
+        self.tabelle_prjUpdate(self.model.jahrgsuch('projekte', 10))
+
+    def J11_prj(self):
+        self.tabelle_prjUpdate(self.model.jahrgsuch('projekte', 11))
+
+    def J12_prj(self):
+        self.tabelle_prjUpdate(self.model.jahrgsuch('projekte', 12))
 
     def a1(self):
         self.andernx = "sVName"

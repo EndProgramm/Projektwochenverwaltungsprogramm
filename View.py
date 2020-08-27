@@ -8,8 +8,8 @@ import ttkthemes
 
 
 class View(ttkthemes.ThemedTk):
-    def __init__(self, run, imp, exp, bee, j5, j6, j7, j8, j9, j10, j11, j12, ja, tabsort, hin, zord, ande, scht,
-                 prjt, aktutable, a1, a2, a3, a4, a5, a6, a7):
+    def __init__(self, run, imp, exp, bee, jahrg, prj_jahrg, tabsort, hin, zord, ande, scht,
+                 prjt, aktutable, andern):
         # print(ttkthemes.THEMES)   # zum Ausgeben der verfügbaren Themes
         ttkthemes.ThemedTk.__init__(self, theme='breeze')
         self.title("Projektwochenverwaltungsprogramm")
@@ -31,7 +31,7 @@ class View(ttkthemes.ThemedTk):
         self.callback_imp = imp
         self.callback_exp = exp
         self.callback_bee = bee
-        self.radiocom = {'jahrg': [j5, j6, j7, j8, j9, j10, j11, j12, ja], 'ande': [a1, a2, a3, a4, a5, a6, a7]}
+        self.radiocom = {'jahrg': jahrg, 'prj_jahrg': prj_jahrg, 'ande': andern}
         self.tabelle_sorti = tabsort
         self.callback_aktut = aktutable
         self.callback_zord = zord
@@ -42,12 +42,13 @@ class View(ttkthemes.ThemedTk):
         self.names = {'schueler': ("Vorname", "Nachname", "Jahrg", "Klasse", "Erst Wunsch", "Zweit Wunsch",
                                    "Dritt Wunsch"),
                       'projekte': ("Name", "Jahrgang", "Nummer", "zugeordnete Schüler", "max Schüler"),
-                      'jahrg': ('5', '6', '7', '8', '9', '10', '11', '12', 'Alle')}
+                      'jahrg': ('5.', '6.', '7.', '8.', '9.', '10.', '11.', '12.', 'Alle')}
         self.width = {'schueler': [35, 121, 122, 50, 50, 100, 100, 100, 100], 'projekte': [35, 343, 75, 75, 150, 100]}
         self.labels = {}
         self.entrys = {}
         self.buttons = {}
-        self.vars = {'jahrg': IntVar(), 'ande': IntVar(), 'menu_t1': IntVar(), 'menu_t2': IntVar()}
+        self.vars = {'jahrg': IntVar(), 'prj_jahrg': IntVar(), 'ande': IntVar(), 'menu_t1': IntVar(),
+                     'menu_t2': IntVar()}
         self.radios = {}
         self.rahmen = {1: Frame(self), 'popup_pro': Frame(self), 2: Frame(self)}
         self.fenster = {}
@@ -61,12 +62,14 @@ class View(ttkthemes.ThemedTk):
                    ('Schüler', ((None, "hinzufügen", self.schulerhin,), (None, "ändern", self.schuelerandern,))),
                    ('Tools', ((None, "Schüler Projekten zuordnen", self.callback_zord,),)),
                    ('Tabellen', ((None, "Projekte tabelle öffnen", self.callback_prjt,),
-                                 ('-', None), (None, "aktualisieren", self.callback_aktut,))),
-                   ('Run', ((None, 'run', self.callback_run,),))))
-        for i in range(len(self.names['jahrg'])):
-            self.radios['jahrg-' + self.names['jahrg'][i]] = Radiobutton(self.rahmen[1], text=self.names['jahrg'][i],
-                                                                         variable=self.vars['jahrg'], value=i,
-                                                                         command=self.radiocom['jahrg'][i])
+                                 ('-', None), (None, "aktualisieren", self.callback_aktut,)))))
+        #                   ('Run', ((None, 'run', self.callback_run,),))))
+
+        self.labels['jahrg'] = Label(self.rahmen[1], text='Jahrgang-Filter:')
+        self.labels['jahrg'].pack(side=LEFT)
+        for i, name in enumerate(self.names['jahrg']):
+            self.radios['jahrg-' + name] = Radiobutton(self.rahmen[1], text=name, variable=self.vars['jahrg'], value=i,
+                                                       command=self.radiocom['jahrg'][i])
             self.radios['jahrg-' + self.names['jahrg'][i]].pack(side=LEFT)
 
         # Tabelle
@@ -132,12 +135,22 @@ class View(ttkthemes.ThemedTk):
         self.tabletags()
 
     def prj_tabelle(self, fetch):
-        self.top['prjt'] = Toplevel()
-        self.top['prjt'].title('Projekte Liste')
-        self.top['prjt'].geometry('800x300')
-        self.top['prjt'].minsize(800, 300)
-        self.scrollbars['prj'] = Scrollbar(self.top['prjt'], orient="vertical")
-        self.table['prj'] = Treeview(self.top['prjt'], yscrollcommand=self.scrollbars['prj'].set, height=200)
+        self.top['prj'] = Toplevel()
+        self.top['prj'].title('Projekte Liste')
+        self.top['prj'].geometry('800x300')
+        self.top['prj'].minsize(800, 300)
+
+        self.rahmen['prj'] = Frame(self.top['prj'])
+        self.labels['prj_jahrg'] = Label(self.rahmen['prj'], text='Jahrgang-Filter:')
+        self.labels['prj_jahrg'].pack(side=LEFT)
+        for i, butname in enumerate(self.names['jahrg']):
+            self.radios['prj-' + butname] = Radiobutton(self.rahmen['prj'], text=butname,
+                                                        variable=self.vars['prj_jahrg'],
+                                                        value=i, command=self.radiocom['prj_jahrg'][i])
+            self.radios['prj-' + butname].pack(side=LEFT)
+        self.rahmen['prj'].pack()
+        self.scrollbars['prj'] = Scrollbar(self.top['prj'], orient="vertical")
+        self.table['prj'] = Treeview(self.top['prj'], yscrollcommand=self.scrollbars['prj'].set, height=200)
 
         ml = ['ID']
         for name in self.names['projekte']:
