@@ -193,17 +193,18 @@ class Model(object):
             sql = "select pNum, pMaxS from projekte WHERE '" + str(jahrg) + "' like pJahrg"
             cur.execute(sql)
             projekte0 = cur.fetchall()
-            projekte=[]
+            projekte = []
             for za in range(len(projekte0)):
-                sql = "select count(sID) from schueler WHERE '" + str(jahrg) + "' like sJahrg and sZu like '" + str(projekte0[za][0]) + "'"
+                sql = "select count(sID) from schueler WHERE '" + str(jahrg) + "' like sJahrg and sZu like '" + str(
+                    projekte0[za][0]) + "'"
                 cur.execute(sql)
-                sz = cur.fetchall()              
-                projekte.append((projekte0[za][0],projekte0[za][1]-sz[0][0]))                
+                sz = cur.fetchall()
+                projekte.append((projekte0[za][0], projekte0[za][1] - sz[0][0]))
             sql = "select sID from schueler WHERE '" + str(jahrg) + "' like sJahrg and sZu is NULL"
             cur.execute(sql)
             schuler = cur.fetchall()
             while len(schuler) > 0 and len(projekte) > 0:
-                projekte=sorted(projekte, key=lambda x: x[1], reverse=True)
+                projekte = sorted(projekte, key=lambda x: x[1], reverse=True)
                 sql = "select pMaxS from projekte WHERE '" + str(jahrg) + "' like pJahrg and '" + str(
                     projekte[0][0]) + "' like pNum"
                 cur.execute(sql)
@@ -220,10 +221,10 @@ class Model(object):
                         sql = "update schueler set sZu='" + str(projekte[0][0]) + "' where '" + str(
                             schuler[0][0]) + "'like sID ;"
                         cur.execute(sql)
-                        projekte[0]=(projekte[0][0],projekte[0][1]-1)
+                        projekte[0] = (projekte[0][0], projekte[0][1] - 1)
                         print(jahrg, projekte)
                         schuler.pop(0)
-            
+
             if len(schuler) != 0 and len(projekte) == 0:
                 showwarning('Fehler', 'Im ' + str(jahrg) + '. Jahrgang gibt es mehr Schüler als Plätze in den Kursen.')
 
